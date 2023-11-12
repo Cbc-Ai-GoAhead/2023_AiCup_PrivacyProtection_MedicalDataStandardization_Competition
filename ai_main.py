@@ -28,9 +28,22 @@ special_tokens_dict = {'bos_token': bos,
                        'eos_token': eos,
                        'pad_token': pad,
                        'sep_token': ner}
-    
+"""
+module_name = "Not Implement"
+procedure_name = "ai_main"
+
+time_str = time.strftime("%Y%m%d%H%M%S", time.localtime()) 
+logObj = log_class.Log('./logs', module_name)
+logObj.set_name( module_name + "[" + procedure_name + "]"  )
+experiment_name = "Training Model"
+logObj.info('Experiments: ' + experiment_name)
+"""
 if __name__ == '__main__':
     set_torch_seed()
+    ####
+    ##  Input Data
+    ####
+    logObj.info('input DataSet')
     print("### input DataSet")
     anno_info_path = "data/First_Phase_ReleaseCorrection/answer.txt"
     report_folder = "data/First_Phase_ReleaseCorrection/First_Phase_Text_Dataset"
@@ -39,6 +52,9 @@ if __name__ == '__main__':
 
     print(f"input : \n{train_seq_pairs[idx]}")
 
+    ####
+    ##  Build Model
+    ####
     # logging.info("Model & Dataloader 宣告")
     print("### Model & Dataloader 宣告")
     BATCH_SIZE = 12

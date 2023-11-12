@@ -11,8 +11,8 @@ special_tokens_dict = {'bos_token': bos,
                        'eos_token': eos,
                        'pad_token': pad,
                        'sep_token': ner}
-
-def train_epoch_model(optimizer, model, device, bucket_train_dataloader):
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+def train_epoch_model(optimizer, model, bucket_train_dataloader):
     # each epoch init
     total_loss = 0
     for step, (seqs, labels, masks) in enumerate(tqdm(bucket_train_dataloader)):
@@ -56,7 +56,7 @@ def train_model(optimizer, model, bucket_train_dataloader, device, model_name, n
         predictions, true_labels = [], []
         # epoch_loss = train_epoch_lstm(optimizer, model, loader)
 
-        total_loss = train_epoch_model(optimizer, model, bucket_train_dataloader, device)#train_epoch(train_loader,model, args.lr,optimizer, device)
+        total_loss = train_epoch_model(optimizer, model, bucket_train_dataloader)#train_epoch(train_loader,model, args.lr,optimizer, device)
 
 
         avg_train_loss = total_loss / len(bucket_train_dataloader)
