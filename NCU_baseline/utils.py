@@ -73,6 +73,7 @@ class Privacy_protection_dataset(Dataset):
     for sample_labels, sample_offsets in zip(batch_lables, offset_mapping):#offset_mapping用意是?
       encodeing_labels = []
       for label in sample_labels:
+        # tokenizer後 id 要重新排?
         encodeing_start, encodeing_end = self.find_token_ids(label[1], label[2], sample_offsets)#label 的位置也要做position encoding
         encodeing_labels.append([label[0], encodeing_start, encodeing_end])
       batch_encodeing_labels.append(encodeing_labels)
@@ -82,27 +83,41 @@ class Privacy_protection_dataset(Dataset):
     if batch_shape[-1]> 4096:
       batch_shape[-1] = 4096
     labels_tensor = torch.zeros(batch_shape)
-    print("---in create_labels_tensor")
-    print("batch_shape = {}" .format(batch_shape))#(1, 512) # Bert只能有512個token
-    print("batch_shape[1] = {}" .format(batch_shape[1]))
+    # print("---in create_labels_tensor")
+    # print("batch_shape = {}" .format(batch_shape))#(1, 512) # Bert只能有512個token
+    # print("batch_shape[1] = {}" .format(batch_shape[1]))
     for sample_id in range(batch_shape[0]):# 取出一個batch 內的值
-      print("sample_id = {}".format(sample_id))
+      # print("sample_id = {}".format(sample_id))
       for label in batch_labels_position_encoded[sample_id]:
-        print("label ={}".format(label))
+        # print("label ={}".format(label))
         #label =['MEDICALRECORD', 1, 8]
         #label =['PATIENT', 8, 17]
         label_id = self.labels_type_table[label[0]]
+        # print("label_id = {}".format(label_id))
         start = label[1] # 取出Position encode編碼過後的位置
         end = label[2]
         if start >= 4096: continue
         elif end >= 4096: end = 4096
-        labels_tensor[sample_id][start:end] = label_id#使用2D 儲存smapleid 0第0筆(MEDICALRECORD), 他起始位置與結束位置 
+        labels_tensor[sample_id][start:end] = label_id#使用2D 儲存smapleid 0第0筆(MEDICALRECORD), 他起始位置與結束位置 ,與 label轉換成的id
+        # print("sample_id = {}, start={}, end={}, labels_tensor={}" .format(sample_id, start, end, labels_tensor[sample_id][start:end]))
+        """
+        b="D.O.B:  09/08/2957"
+        >>> b[8:18]
+        '09/08/2957'
+        """
+        """
+        會有 null值
+        label =['DOCTOR', inf, 0]
+        label_id = 1
+        label =['DATE', inf, 0]
+
+        """
     return labels_tensor
 
   def collate_fn(self, batch_items:list):
     """the calculation process in dataloader iteration"""
-    print("batch_items =")
-    print(batch_items)
+    # print("batch_items =")
+    # print(batch_items)
     batch_medical_record = [sample[0] for sample in batch_items] #(id, label, start, end, query) or (id, label, start, end, query, time_org, timefix)
     # sample 0: 第id的文本, sample 1: label, sample 2: start_positioin, sample 3: End_position, sample 4: query
     # sample  0 取出文本 ('\nEpisode No:  62E239483S\n621239.MVH\n\n
@@ -110,10 +125,11 @@ class Privacy_protection_dataset(Dataset):
     batch_labels = [sample[1] for sample in batch_items]
     batch_id_list = [sample[2] for sample in batch_items]
 
-    # 文本丟入 encoding進行編碼
+    # 文本丟入 encoding進行編碼 進行斷詞
     encodings = self.tokenizer(batch_medical_record, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True") # truncation=True
     # encode label
     # 丟入 bert
+    # 第0句話輸出的token id =0 第1句話 id =1, padding mask =1 不是padding的id都是1
     batch_labels_position_encoded = self.encode_labels_position(batch_labels, encodings["offset_mapping"])
     #print(encodings["offset_mapping"])
     #print(batch_labels_position_encoded) #show the labels after position encoding

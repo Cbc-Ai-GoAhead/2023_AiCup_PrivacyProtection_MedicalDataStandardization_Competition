@@ -60,7 +60,7 @@ if __name__ == '__main__':
   #####
   # label_path =['../data/First_Phase_Release_Correction/answer.txt', '../data/Second_Phase_Dataset/answer.txt']
   train_label_dict = create_label_dict(label_path[0])#
-  print(train_label_dict)
+  # print(train_label_dict)
   """
   {[['DOCTOR', 18376, 18384, 'I Eifert'], ['TIME', 18412, 18431, '2512-10-20 00:00:00', '2512-10-20T00:00:00'], ['PATIENT', 18443, 18449, 'Bodway']]}
   """
@@ -87,11 +87,11 @@ if __name__ == '__main__':
   print("Testing  Context and label")
   # input id (String type)
   #output the medical_record
-  print(train_medical_record_dict["10"])# 印出file_name=10 檔案內容
+  # print(train_medical_record_dict["10"])# 印出file_name=10 檔案內容
 
   # input id (String type)
   # output all labels from medical_record (list type)
-  pp(train_label_dict["10"]) # 印出file_name=10 檔案label
+  # pp(train_label_dict["10"]) # 印出file_name=10 檔案label
 
   # {[['file14362', 'TIME', 2410, 2426, '3:10pm on 5/9/16', '2016-09-05T15:10'], [] ]}
   print("## Get label from train_label_dict")
@@ -105,7 +105,7 @@ if __name__ == '__main__':
   #     break
   #   break
   labels_type = list(set( [label[0] for labels in train_label_dict.values() for label in labels] ))
-  print("labels_type = {}".format(labels_type))
+  # print("labels_type = {}".format(labels_type))
 
 
 
@@ -113,8 +113,8 @@ if __name__ == '__main__':
   # 加入 OTHER 總共有 22個類別
   labels_type = ["OTHER"] + labels_type #add special token [other] in label list
   labels_num = len(labels_type)
-  print("labels_type = {}".format(labels_type))
-  print("The number of labels labels_num = {}".format(labels_num))
+  # print("labels_type = {}".format(labels_type))
+  # print("The number of labels labels_num = {}".format(labels_num))
 
   ####
   ##  Label to id
@@ -126,7 +126,7 @@ if __name__ == '__main__':
 
   labels_type_table = {label_name:id for id, label_name in enumerate(labels_type)}
   # label to id
-  print("labels_type_table = {}".format(labels_type_table))
+  # print("labels_type_table = {}".format(labels_type_table))
 
 
   ####
@@ -182,21 +182,67 @@ if __name__ == '__main__':
   print(len(train_dataset))
   for sample in train_dataset:
     train_x, train_y,_ = sample
-    print("train_x = {} , train_y={}".format(train_x, train_y))
+    # print("train_x = {} , train_y={}".format(train_x, train_y))
     # print(train_y)
     break
   print("-----------------")
-  print("DataLoader")
-  print(len(train_dataloader))
+  # print("DataLoader")
+  # print(len(train_dataloader))
   for sample in train_dataloader:
     # batch_medical_record, encodings, batch_labels_tensor, batch_labels
     x_name,train_x, train_y, _ = sample
-    print("x_name = {},".format(x_name))
-    print("train_x = {}, train_y= {}".format(train_x, train_y))
-    # print(train_y)
+    # print("x_name = {},".format(x_name))
+    # print("train_x = {}, train_y= {}".format(train_x, train_y))
+    # print("len train_x = {}, train_y= {}".format(len(train_x), len(train_y)))
+    print("-----------------")
+    # print(x_name[4440:4448])
+    # ['HOSPITAL', ]
+    # print(x_name[143:155])
     break
   print("----------------")
   #show the first batch labels embeddings
   print(labels_type_table)
   for i in range(BACH_SIZE):
     print(train_y[i].tolist())
+    # 會補成512長度
+    print("len train_y[i] ={}".format(len(train_y[i].tolist())))
+
+  #####
+  ##  Testing Tokenizer  這裡就是在告訴我們 tokenzer完後文本的狀況 
+  ## 所以助教給我們程式碼 已經是有修改長度到512 並且文本和label的id有重新修改過
+  #####
+  print("--------------------------")
+  print("#### Tokenizer")
+  #some exist id "10", "11", "12", "file16529"
+  id = "file10996"
+  print(train_medical_record_dict[id])
+  pp(train_label_dict[id])
+  print("Number of character in medical_record:", len(train_medical_record_dict[id]))
+
+  example_medical_record = train_medical_record_dict[id]
+  example_labels = train_label_dict[id]
+
+  encodings = tokenizer(example_medical_record, padding=True, return_tensors="pt", return_offsets_mapping="True")
+  print(encodings.keys())
+  #print(encodings["input_ids"])
+  #print(encodings["attention_mask"])
+  print(encodings["offset_mapping"])
+  print(encodings["offset_mapping"].shape)
+  #print(tokenizer.decode(encodings["input_ids"][0])) #get the original text
+
+  print(encodings["input_ids"].shape)
+  print(encodings["attention_mask"].shape)
+  print(len(encodings["offset_mapping"][0]))
+
+  print("### Testing find_token_ids (the funtion in Privacy_protection_dataset)")
+
+  encodeing_start, encodeing_end = train_dataset.find_token_ids(train_label_dict[id][3][1], train_label_dict[id][3][2], encodings["offset_mapping"][0])
+  print(encodeing_start, encodeing_end)
+
+  #get the original text
+  print(tokenizer.decode(encodings["input_ids"][0][encodeing_start:encodeing_end])) #sometime will error
+
+  decode_start_pos = int(encodings["offset_mapping"][0][encodeing_start][0])
+  decode_end_pos = int(encodings["offset_mapping"][0][encodeing_end-1][1])
+  print(decode_start_pos, decode_end_pos)
+  print(train_medical_record_dict[id][decode_start_pos:decode_end_pos])
