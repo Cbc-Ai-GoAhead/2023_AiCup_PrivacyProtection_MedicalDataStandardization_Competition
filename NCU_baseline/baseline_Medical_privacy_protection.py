@@ -136,13 +136,13 @@ class myModel(torch.nn.Module):
         out = self.fc(output)
 
         return out
-model = myModel()
-print(model)
+# model = myModel()
+# print(model)
 
 BACH_SIZE = 1
-#TRAIN_RATIO = 0.9
-LEARNING_RATE = 1e-4
-EPOCH = 1
+# #TRAIN_RATIO = 0.9
+# LEARNING_RATE = 1e-4
+# EPOCH = 1
 
 
 import torch
@@ -276,15 +276,49 @@ print(len(encodings["offset_mapping"][0]))
 print("### Testing find_token_ids (the funtion in Privacy_protection_dataset)")
 
 encodeing_start, encodeing_end = train_dataset.find_token_ids(train_label_dict[id][3][1], train_label_dict[id][3][2], encodings["offset_mapping"][0])
-print(encodeing_start, encodeing_end)
+print("encodeing_start={}, encodeing_end={}" .format(encodeing_start, encodeing_end))
 
 #get the original text
 print(tokenizer.decode(encodings["input_ids"][0][encodeing_start:encodeing_end])) #sometime will error
-
+# 7303827. KMG
+print("encodings[input_ids][0] = {}" .format(encodings["input_ids"][0])) #是 文檔內容的 tensor_id
+print("tokenizer.decode-1 = {}" .format(tokenizer.decode(encodings["input_ids"][0][encodeing_start:encodeing_end])))
 decode_start_pos = int(encodings["offset_mapping"][0][encodeing_start][0])
 decode_end_pos = int(encodings["offset_mapping"][0][encodeing_end-1][1])
-print(decode_start_pos, decode_end_pos)
+
+print("offset_mapping decode")
+# print(encodings["offset_mapping"])
+# tensor([[[   0,    0],
+#          [   0,    2],
+#          [   2,    3],
+#          ...,
+#          [1903, 1906],
+#          [1906, 1909],
+#          [   0,    0]]])
+print(encodings["offset_mapping"][0][encodeing_start][0])#第65個的第0個值149
+print(encodings["offset_mapping"][0][encodeing_start][1])#第65個的第0個值151
+print(encodings["offset_mapping"][0][encodeing_start-1][1])#第64個值的第1一個值147
+
+# 7303827.KMG
+# s
+# 7303827.KMG
+# 1  7303827.KMG
+print("Start END")
+print(train_medical_record_dict[id][int(encodings["offset_mapping"][0][encodeing_start][0]):int(encodings["offset_mapping"][0][encodeing_end][1])])
+print("Start END-1")
+print(train_medical_record_dict[id][int(encodings["offset_mapping"][0][encodeing_start][0]):int(encodings["offset_mapping"][0][encodeing_end-1][1])])
+print("Start-1 END-1")
+print(train_medical_record_dict[id][int(encodings["offset_mapping"][0][encodeing_start-1][0]):int(encodings["offset_mapping"][0][encodeing_end-1][1])])
+print("Doing Format offset_mapping")
+print("decode_start_pos={}, decode_end_pos={}" .format(decode_start_pos, decode_end_pos))
+print("train_medical_record_dict[id][decode_start_pos:decode_end_pos]= ")
+#7303827.KMG 空格會被刪去
+# 重新修正 tokenizer後的位置
+print("encodeing_end-1 =")
 print(train_medical_record_dict[id][decode_start_pos:decode_end_pos])
+print("encodeing_end  =")
+print(train_medical_record_dict[id][decode_start_pos:decode_end_pos+1])
+
 
 
 def post_proxessing(model_result:list):
@@ -299,211 +333,214 @@ for position in position_list:
   encodeing_start, encodeing_end = train_dataset.find_token_ids(position[0], position[1], encodings["offset_mapping"][0])
   #fix the decode solution at here
   predict_result.append(tokenizer.decode(encodings["input_ids"][0][encodeing_start:encodeing_end])) #sometime will error
-print(predict_result)
-print(post_proxessing(predict_result))
-print(expected_result)
-print(predict_result == expected_result) # token range clipping problem
+print("predict_result = {}" .format(predict_result))
+print("expected_result= {}".format(expected_result))
+print("post_proxessing(predict_result) ={}".format(post_proxessing(predict_result)))
+# print(expected_result)
+print("predict_result == expected_result = {}, post_proxessing(predict_result) == expected_result={}".format(predict_result == expected_result, post_proxessing(predict_result) == expected_result)) # token range clipping problem
 
 #you need to do post proxessing after useing the model to solve the problem
 
-print(post_proxessing(predict_result) == expected_result)
+# print(post_proxessing(predict_result) == expected_result)
 
 #show the samples in train still need preprocess
-"""
+
 error = 0
 error_list = []
 for id in train_dataset.id_list:
 
-  example_medical_record = medical_record_dict[id]
-  example_labels = label_dict[id]
+  # example_medical_record = medical_record_dict[id]
+  example_medical_record = train_medical_record_dict[id]
+  example_labels = train_label_dict[id]
   position_list = [label[1:3] for label in example_labels]
   expected_result = [label[3] for label in example_labels]
   predict_result = []
-
-  encodings = tokenizer(example_medical_record, padding=True, return_tensors="pt", return_offsets_mapping="True")
-  for position in position_list:
-    encodeing_start, encodeing_end = train_dataset.find_token_ids(position[0], position[1], encodings["offset_mapping"][0])
-    predict_result.append(tokenizer.decode(encodings["input_ids"][0][encodeing_start:encodeing_end])) #get the original text
-  if post_proxessing(predict_result) != expected_result:
-    error_list.append(id)
-    error += 1
-
-if error == 0:
-  print("pass the test")
-else:
-  print("error list:", error_list)
-"""
-
-
-print("### Train")
-# Load the TensorBoard notebook extension
-# %load_ext tensorboard
-# # Clear any logs from previous runs
-# !rm -rf ./logs/
-
-from torch.utils.tensorboard import SummaryWriter
-writer = SummaryWriter()
-
-from tqdm import tqdm
-from torch.optim import AdamW
-from torch.nn import CrossEntropyLoss
-device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-model = model.to(device) # Put model on device
-optim = AdamW(model.parameters(), lr = LEARNING_RATE)
-loss_fct = CrossEntropyLoss()
-
-def decode_model_result(model_predict_table, offsets_mapping, labels_type_table):
-  model_predict_list = model_predict_table.tolist()
-  id_to_label = {id:label for label, id in labels_type_table.items()}
-  predict_y = []
-  pre_label_id = 0
-  for position_id, label_id in enumerate(model_predict_list):
-    if label_id!=0:
-      if pre_label_id!=label_id:
-        start = int(offsets_mapping[position_id][0])
-      end = int(offsets_mapping[position_id][1])
-    if pre_label_id!=label_id and pre_label_id!=0:
-      predict_y.append([id_to_label[pre_label_id], start, end])
-    pre_label_id = label_id
-  if pre_label_id!=0:
-    predict_y.append([id_to_label[pre_label_id], start, end])
-  return predict_y
-
-def calculate_batch_score(batch_labels, model_predict_tables, offset_mappings, labels_type_table):
-    score_table = {"TP":0, "FP":0, "TN":0}
-    batch_size = model_predict_tables.shape[0]
-    for batch_id in range(batch_size):
-        smaple_prediction = decode_model_result(model_predict_tables[batch_id], offset_mappings[batch_id], labels_type_table)
-        smaple_ground_truth = batch_labels[batch_id]
-        #print(smaple_prediction)
-        #print(smaple_ground_truth)
-        # do the post_processing at here
-        # calculeate TP, TN, FP
-        smaple_ground_truth = set([tuple(token) for token in smaple_ground_truth])
-        smaple_prediction = set([tuple(token) for token in smaple_prediction])
-        score_table["TP"] += len( smaple_ground_truth & smaple_prediction)
-        score_table["TN"] += len( smaple_ground_truth - smaple_prediction)
-        score_table["FP"] += len( smaple_prediction - smaple_ground_truth)
-    if (score_table["TP"] + score_table["FP"])==0 or (score_table["TP"] + score_table["TN"])==0:
-      return 0, 0, 0
-
-    Precision = score_table["TP"] / (score_table["TP"] + score_table["FP"])
-    Recall = score_table["TP"] / (score_table["TP"] + score_table["TN"])
-    if(Precision + Recall) ==0:
-      return 0, 0, 0
-
-    F1_score = 2 * (Precision * Recall) / (Precision + Recall)
-    return Precision, Recall, F1_score
-
-train_step = 0
-val_step = 0
-# one epoch about 8 minutes for T4 on Colab
-# 5G memory needed when BACH_SIZE = 1
-for epoch in range(EPOCH):
-  model.train()
-  for batch_x, batch_y, batch_labels in train_dataloader:
-    train_step += 1
-    optim.zero_grad()
-    batch_x["input_ids"] = batch_x["input_ids"].to(device)
-    batch_x["attention_mask"] = batch_x["attention_mask"].to(device)
-    batch_y = batch_y.long().to(device)
-    outputs = model(batch_x["input_ids"], batch_x["attention_mask"])
-    #print(batch_y.shape)
-    train_loss = loss_fct(outputs.transpose(-1, -2), batch_y)
-    #print("train_loss", train_loss)
-    writer.add_scalar('Loss/train', train_loss, train_step)
-
-    # calculate loss
-    train_loss.backward()
-    # update parameters
-    optim.step()
-
-  model.eval()
-  sum_val_F1 = 0
-  for batch_x, batch_y, batch_labels in val_dataloader:
-    val_step += 1
-    optim.zero_grad()
-    batch_x["input_ids"] = batch_x["input_ids"].to(device)
-    batch_x["attention_mask"] = batch_x["attention_mask"].to(device)
-    batch_y = batch_y.long().to(device)
-    outputs = model(batch_x["input_ids"], batch_x["attention_mask"])
-    model_predict_tables = torch.argmax(outputs, dim=-1, keepdim=True)
-    model_predict_tables = model_predict_tables.squeeze(-1)
-    P, R, F1 = calculate_batch_score(batch_labels, model_predict_tables, batch_x["offset_mapping"], labels_type_table)
-    if val_step%50==0:
-      print("val_F1", F1)
-    val_loss = loss_fct(outputs.transpose(-1, -2), batch_y)
-    sum_val_F1 += float(F1)
-    #print("val_loss", val_loss)
-    writer.add_scalar('Loss/val', val_loss, val_step)
-    writer.add_scalar('F1/val', F1, val_step)
-  torch.save(model.state_dict(), "./model/" + "bert-base-cased"+"_"+str(epoch)+"_"+str(sum_val_F1/len(val_dataloader)))
-writer.close()
-
-
-
-
-
-for i, sample in enumerate(val_dataloader):
-  model.eval()
-  encodings, y, batch_labels = sample
-  batch_size = encodings["input_ids"].shape[0]
-  #print(i)
-  #encodings = tokenizer(x, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True")
-  encodings["input_ids"] = encodings["input_ids"].to(device)
-  encodings["attention_mask"] = encodings["attention_mask"].to(device)
-  outputs = model(encodings["input_ids"], encodings["attention_mask"])
-  #output = softmax(outputs.logits)
-  #print(outputs.logits.shape)
-  model_predict_tables = torch.argmax(outputs, dim=-1, keepdim=True)
-  #if batch_size==1:
-  #  model_predict_table.unsqueeze(0)
-  model_predict_tables = model_predict_tables.squeeze(-1)
-
-  P, R, F1 = calculate_batch_score(batch_labels, model_predict_tables, encodings["offset_mapping"], labels_type_table)
-  print("Precision: %.2f, Recall %.2f, F1 score: %.2f" %(P, R, F1))
-  if i==20:
-    break
-
-output_string = ""
-for i, sample in enumerate(val_dataset):
-    model.eval()
-    x, y, id = sample
-    #print(id)
-    encodings = tokenizer(x, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True")
-    encodings["input_ids"] = encodings["input_ids"].to(device)
-    encodings["attention_mask"] = encodings["attention_mask"].to(device)
-    outputs = model(encodings["input_ids"], encodings["attention_mask"])
-    #output = softmax(outputs.logits)
-    model_predict_table = torch.argmax(outputs.squeeze(), dim=-1)
-    #print(model_predict_table)
-    model_predict_list = decode_model_result(model_predict_table, encodings["offset_mapping"][0], labels_type_table)
-    #print(model_predict_list)
-    for predict_label_range in model_predict_list:
-        predict_label_name, start, end = predict_label_range
-        predict_str = val_medical_record_dict[id][start:end]
-        # do the postprocessing at here
-        sample_result_str = (id +'\t'+ predict_label_name +'\t'+ str(start) +'\t'+ str(end) +'\t'+ predict_str + "\n")
-        output_string += sample_result_str
-    #print(y)
-if not os.path.exists("./submission"):
-    os.mkdir("./submission")
-with open("./submission/answer.txt", "w", encoding="utf-8") as f:
-    f.write(output_string)
-
-
-print("### Other")
-for i, sample in enumerate(val_dataset):
-  model.eval()
-  x, y, id = sample
-  print(id)
-  encodings = tokenizer(x, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True")
-  encodings["input_ids"] = encodings["input_ids"].to(device)
-  encodings["attention_mask"] = encodings["attention_mask"].to(device)
-  outputs = model(encodings["input_ids"], encodings["attention_mask"])
-  #output = softmax(outputs.logits)
-  model_predict_table = torch.argmax(outputs.squeeze(), dim=-1)
-  #print(model_predict_table)
-  print(decode_model_result(model_predict_table, encodings["offset_mapping"][0], labels_type_table))
-  print(y)
+  print("position_list={} expected_result={}".format(position_list, expected_result))
   break
+#   encodings = tokenizer(example_medical_record, padding=True, return_tensors="pt", return_offsets_mapping="True")
+#   for position in position_list:
+#     encodeing_start, encodeing_end = train_dataset.find_token_ids(position[0], position[1], encodings["offset_mapping"][0])
+#     predict_result.append(tokenizer.decode(encodings["input_ids"][0][encodeing_start:encodeing_end])) #get the original text
+#   if post_proxessing(predict_result) != expected_result:
+#     error_list.append(id)
+#     error += 1
+
+# if error == 0:
+#   print("pass the test")
+# else:
+#   print("error list:", error_list)
+
+
+
+# print("### Train")
+# # Load the TensorBoard notebook extension
+# # %load_ext tensorboard
+# # # Clear any logs from previous runs
+# # !rm -rf ./logs/
+
+# from torch.utils.tensorboard import SummaryWriter
+# writer = SummaryWriter()
+
+# from tqdm import tqdm
+# from torch.optim import AdamW
+# from torch.nn import CrossEntropyLoss
+# device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+# model = model.to(device) # Put model on device
+# optim = AdamW(model.parameters(), lr = LEARNING_RATE)
+# loss_fct = CrossEntropyLoss()
+
+# def decode_model_result(model_predict_table, offsets_mapping, labels_type_table):
+#   model_predict_list = model_predict_table.tolist()
+#   id_to_label = {id:label for label, id in labels_type_table.items()}
+#   predict_y = []
+#   pre_label_id = 0
+#   for position_id, label_id in enumerate(model_predict_list):
+#     if label_id!=0:
+#       if pre_label_id!=label_id:
+#         start = int(offsets_mapping[position_id][0])
+#       end = int(offsets_mapping[position_id][1])
+#     if pre_label_id!=label_id and pre_label_id!=0:
+#       predict_y.append([id_to_label[pre_label_id], start, end])
+#     pre_label_id = label_id
+#   if pre_label_id!=0:
+#     predict_y.append([id_to_label[pre_label_id], start, end])
+#   return predict_y
+
+# def calculate_batch_score(batch_labels, model_predict_tables, offset_mappings, labels_type_table):
+#     score_table = {"TP":0, "FP":0, "TN":0}
+#     batch_size = model_predict_tables.shape[0]
+#     for batch_id in range(batch_size):
+#         smaple_prediction = decode_model_result(model_predict_tables[batch_id], offset_mappings[batch_id], labels_type_table)
+#         smaple_ground_truth = batch_labels[batch_id]
+#         #print(smaple_prediction)
+#         #print(smaple_ground_truth)
+#         # do the post_processing at here
+#         # calculeate TP, TN, FP
+#         smaple_ground_truth = set([tuple(token) for token in smaple_ground_truth])
+#         smaple_prediction = set([tuple(token) for token in smaple_prediction])
+#         score_table["TP"] += len( smaple_ground_truth & smaple_prediction)
+#         score_table["TN"] += len( smaple_ground_truth - smaple_prediction)
+#         score_table["FP"] += len( smaple_prediction - smaple_ground_truth)
+#     if (score_table["TP"] + score_table["FP"])==0 or (score_table["TP"] + score_table["TN"])==0:
+#       return 0, 0, 0
+
+#     Precision = score_table["TP"] / (score_table["TP"] + score_table["FP"])
+#     Recall = score_table["TP"] / (score_table["TP"] + score_table["TN"])
+#     if(Precision + Recall) ==0:
+#       return 0, 0, 0
+
+#     F1_score = 2 * (Precision * Recall) / (Precision + Recall)
+#     return Precision, Recall, F1_score
+
+# train_step = 0
+# val_step = 0
+# # one epoch about 8 minutes for T4 on Colab
+# # 5G memory needed when BACH_SIZE = 1
+# for epoch in range(EPOCH):
+#   model.train()
+#   for batch_x, batch_y, batch_labels in train_dataloader:
+#     train_step += 1
+#     optim.zero_grad()
+#     batch_x["input_ids"] = batch_x["input_ids"].to(device)
+#     batch_x["attention_mask"] = batch_x["attention_mask"].to(device)
+#     batch_y = batch_y.long().to(device)
+#     outputs = model(batch_x["input_ids"], batch_x["attention_mask"])
+#     #print(batch_y.shape)
+#     train_loss = loss_fct(outputs.transpose(-1, -2), batch_y)
+#     #print("train_loss", train_loss)
+#     writer.add_scalar('Loss/train', train_loss, train_step)
+
+#     # calculate loss
+#     train_loss.backward()
+#     # update parameters
+#     optim.step()
+
+#   model.eval()
+#   sum_val_F1 = 0
+#   for batch_x, batch_y, batch_labels in val_dataloader:
+#     val_step += 1
+#     optim.zero_grad()
+#     batch_x["input_ids"] = batch_x["input_ids"].to(device)
+#     batch_x["attention_mask"] = batch_x["attention_mask"].to(device)
+#     batch_y = batch_y.long().to(device)
+#     outputs = model(batch_x["input_ids"], batch_x["attention_mask"])
+#     model_predict_tables = torch.argmax(outputs, dim=-1, keepdim=True)
+#     model_predict_tables = model_predict_tables.squeeze(-1)
+#     P, R, F1 = calculate_batch_score(batch_labels, model_predict_tables, batch_x["offset_mapping"], labels_type_table)
+#     if val_step%50==0:
+#       print("val_F1", F1)
+#     val_loss = loss_fct(outputs.transpose(-1, -2), batch_y)
+#     sum_val_F1 += float(F1)
+#     #print("val_loss", val_loss)
+#     writer.add_scalar('Loss/val', val_loss, val_step)
+#     writer.add_scalar('F1/val', F1, val_step)
+#   torch.save(model.state_dict(), "./model/" + "bert-base-cased"+"_"+str(epoch)+"_"+str(sum_val_F1/len(val_dataloader)))
+# writer.close()
+
+
+
+
+
+# for i, sample in enumerate(val_dataloader):
+#   model.eval()
+#   encodings, y, batch_labels = sample
+#   batch_size = encodings["input_ids"].shape[0]
+#   #print(i)
+#   #encodings = tokenizer(x, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True")
+#   encodings["input_ids"] = encodings["input_ids"].to(device)
+#   encodings["attention_mask"] = encodings["attention_mask"].to(device)
+#   outputs = model(encodings["input_ids"], encodings["attention_mask"])
+#   #output = softmax(outputs.logits)
+#   #print(outputs.logits.shape)
+#   model_predict_tables = torch.argmax(outputs, dim=-1, keepdim=True)
+#   #if batch_size==1:
+#   #  model_predict_table.unsqueeze(0)
+#   model_predict_tables = model_predict_tables.squeeze(-1)
+
+#   P, R, F1 = calculate_batch_score(batch_labels, model_predict_tables, encodings["offset_mapping"], labels_type_table)
+#   print("Precision: %.2f, Recall %.2f, F1 score: %.2f" %(P, R, F1))
+#   if i==20:
+#     break
+
+# output_string = ""
+# for i, sample in enumerate(val_dataset):
+#     model.eval()
+#     x, y, id = sample
+#     #print(id)
+#     encodings = tokenizer(x, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True")
+#     encodings["input_ids"] = encodings["input_ids"].to(device)
+#     encodings["attention_mask"] = encodings["attention_mask"].to(device)
+#     outputs = model(encodings["input_ids"], encodings["attention_mask"])
+#     #output = softmax(outputs.logits)
+#     model_predict_table = torch.argmax(outputs.squeeze(), dim=-1)
+#     #print(model_predict_table)
+#     model_predict_list = decode_model_result(model_predict_table, encodings["offset_mapping"][0], labels_type_table)
+#     #print(model_predict_list)
+#     for predict_label_range in model_predict_list:
+#         predict_label_name, start, end = predict_label_range
+#         predict_str = val_medical_record_dict[id][start:end]
+#         # do the postprocessing at here
+#         sample_result_str = (id +'\t'+ predict_label_name +'\t'+ str(start) +'\t'+ str(end) +'\t'+ predict_str + "\n")
+#         output_string += sample_result_str
+#     #print(y)
+# if not os.path.exists("./submission"):
+#     os.mkdir("./submission")
+# with open("./submission/answer.txt", "w", encoding="utf-8") as f:
+#     f.write(output_string)
+
+
+# print("### Other")
+# for i, sample in enumerate(val_dataset):
+#   model.eval()
+#   x, y, id = sample
+#   print(id)
+#   encodings = tokenizer(x, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True")
+#   encodings["input_ids"] = encodings["input_ids"].to(device)
+#   encodings["attention_mask"] = encodings["attention_mask"].to(device)
+#   outputs = model(encodings["input_ids"], encodings["attention_mask"])
+#   #output = softmax(outputs.logits)
+#   model_predict_table = torch.argmax(outputs.squeeze(), dim=-1)
+#   #print(model_predict_table)
+#   print(decode_model_result(model_predict_table, encodings["offset_mapping"][0], labels_type_table))
+#   print(y)
+#   break

@@ -15,24 +15,50 @@ def read_text_from_file(file_path):
 
 def create_label_dict(label_path):
   label_dict = {} #y
+  date_label_dict = {} #DATE TIME DURATION SET
   with open(label_path, "r", encoding="utf-8") as f:
     file_text = f.read()
     file_text = file_text.strip("\ufeff").strip() #train file didn't remove this head
   for line in file_text.split("\n"):
     sample = line.split("\t") #(id, label, start, end, query) or (id, label, start, end, query, time_org, timefix)
     sample[2], sample[3] = (int(sample[2]), int(sample[3])) #start, end = (int(start), int(end))
+
+
     # print(sample)
     """
     ['file1436', 'TIME', 3651, 3670, '2761-04-09 00:00:00', '2761-04-09T00:00:00']
     ['file1436', 'PATIENT', 3682, 3695, 'ELLIS-GEFFERS']
     ['file14362', 'IDNUM', 8, 18, '86L006749H']
     """
+    
+    # sample[0] is filename
+    # print(sample[0])
     if sample[0] not in label_dict.keys():
+      #DATE TIME DURATION SET
+      if sample[1] == ('DATE' or "TIME" or "DURATIOM" or "SET"):
+        date_label_dict[sample[0]] = [sample[1:]]
       label_dict[sample[0]] = [sample[1:]]
+        
+      
+      # print(label_dict)
     else:
-      label_dict[sample[0]].append(sample[1:])
-  #print(label_dict)
-  return label_dict
+      if sample[1] == ('DATE' or "TIME" or "DURATIOM" or "SET"):
+        date_label_dict[sample[0]] = [sample[1:]]
+      label_dict[sample[0]].append(sample[1:]) # 組成group list
+        
+      # 144': [['IDNUM', 13, 23, '77H941695D'], ['MEDICALRECORD', 24, 34, '772941.RZP'],]
+    # print(label_dict)
+  return label_dict, date_label_dict
+def extract_date_lable(train_label_dict, train_id_list):
+  print("extract_date_lable")
+  for sample_id in train_id_list:
+    sample_id_lablel_group_list = train_label_dict[sample_id]
+    print(sample_id_lablel_group_list)
+    for sample_id_list in sample_id_lablel_group_list:
+      print(sample_id_list)
+      break
+    break
+  print("----------extract_date_lable")
 
 import torch
 from torch.utils.data import Dataset, DataLoader

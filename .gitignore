@@ -3,3 +3,9 @@ exp/
 experiments/
 __pycache__
 model/
+NCU_baseline/__pycache__
+NCU_baseline/model/
+NCU_baseline/submission/
+NCU_baseline/logs/
+NCU_baseline/runs/
+NCU_baseline/file_error_list.txt

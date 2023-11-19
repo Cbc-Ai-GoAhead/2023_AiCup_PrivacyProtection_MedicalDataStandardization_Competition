@@ -59,16 +59,17 @@ if __name__ == '__main__':
   ##  Load Label
   #####
   # label_path =['../data/First_Phase_Release_Correction/answer.txt', '../data/Second_Phase_Dataset/answer.txt']
-  train_label_dict = create_label_dict(label_path[0])#
+  train_label_dict, train_date_label_dict = create_label_dict(label_path[0])#
   # print(train_label_dict)
   """
   {[['DOCTOR', 18376, 18384, 'I Eifert'], ['TIME', 18412, 18431, '2512-10-20 00:00:00', '2512-10-20T00:00:00'], ['PATIENT', 18443, 18449, 'Bodway']]}
   """
 
-  second_dataset_label_dict = create_label_dict(label_path[1])
+  second_dataset_label_dict, second_date_label_dict = create_label_dict(label_path[1])
   train_label_dict.update(second_dataset_label_dict)
-  val_label_dict = create_label_dict(val_label_path)
-
+  train_date_label_dict.update(second_date_label_dict)
+  val_label_dict, val_date_label_dict = create_label_dict(val_label_path)
+  # print("val_date_label_dict = {}".format(val_date_label_dict))
   #####
   ##  Check the number of data
   #####
@@ -110,11 +111,11 @@ if __name__ == '__main__':
 
 
   # 原本只有21 個類別
-  # 加入 OTHER 總共有 22個類別
+  # 加入 OTHER 總共有 22個類別 去掉 #DATE TIME DURATION SET => 22-4=18
   labels_type = ["OTHER"] + labels_type #add special token [other] in label list
   labels_num = len(labels_type)
-  # print("labels_type = {}".format(labels_type))
-  # print("The number of labels labels_num = {}".format(labels_num))
+  print("labels_type = {}".format(labels_type))
+  print("The number of labels labels_num = {}".format(labels_num))
 
   ####
   ##  Label to id
@@ -146,16 +147,22 @@ if __name__ == '__main__':
   ####
   ##  Prepare Dataset DataLoader
   ####
+  ####
+  ##  DATE TIME DURATION SET
+  ####
+  print("Prepare Dataset DataLoader")
+  # print(train_medical_record_dict.keys())
   train_id_list = list(train_medical_record_dict.keys())
   train_medical_record = {sample_id: train_medical_record_dict[sample_id] for sample_id in train_id_list}
   train_labels = {sample_id: train_label_dict[sample_id] for sample_id in train_id_list}
+  print("----Prepare Dataset DataLoader")
   # print("train_medical_record=  {}".format(train_medical_record))
   # {'file13264': 'SPR no: 42I520757G\nMRN no: 4235207\nSite_name: HORNSBY KU-RING-GAI HOSPITAL\n
   # ,'file23878': 'SPR no: 85A648111M\nMRN no: 850648\nSite_name: LAURA CAMPUS}
 
   # print("train_labels= {}".format(train_labels))
   # ['DATE', 3401, 3407, '3.4.64', '2064-03-04'], ['DATE', 4118, 4125, '20.4.64', '2064-04-20']]}
-
+  print("val_id_list===")
   val_id_list = list(val_medical_record_dict.keys())
   val_medical_record = {sample_id: val_medical_record_dict[sample_id] for sample_id in val_id_list}
   val_labels = {sample_id: val_label_dict[sample_id] for sample_id in val_id_list}
@@ -164,6 +171,7 @@ if __name__ == '__main__':
   # print("val_medical_record= {}".format(val_medical_record[:10]))
   # print("val_labels= {}".format(val_labels[:10]))
 
+  print("Display Model------")
   from transformers import AutoTokenizer, AutoModelForTokenClassification
   model_name = "bert-base-cased"
   tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -246,3 +254,207 @@ if __name__ == '__main__':
   decode_end_pos = int(encodings["offset_mapping"][0][encodeing_end-1][1])
   print(decode_start_pos, decode_end_pos)
   print(train_medical_record_dict[id][decode_start_pos:decode_end_pos])
+
+  def post_proxessing(model_result:list):
+    #need fix
+    return [label.strip() for label in model_result]
+
+  print(example_labels)
+  position_list = [label[1:3] for label in example_labels]
+  expected_result = [label[3] for label in example_labels]
+  predict_result = []
+  for position in position_list:
+    encodeing_start, encodeing_end = train_dataset.find_token_ids(position[0], position[1], encodings["offset_mapping"][0])
+    #fix the decode solution at here
+    predict_result.append(tokenizer.decode(encodings["input_ids"][0][encodeing_start:encodeing_end])) #sometime will error
+  print("predict_result = {}, expected_result={}" .format(predict_result, expected_result))
+  print("post_proxessing(predict_result) ={}".format(post_proxessing(predict_result)))
+  # print(expected_result)
+  print("predict_result == expected_result = {}, post_proxessing(predict_result) == expected_result={}".format(predict_result == expected_result, post_proxessing(predict_result) == expected_result)) # token range clipping problem
+
+  print("### Train")
+  # Load the TensorBoard notebook extension
+  # %load_ext tensorboard
+  # # Clear any logs from previous runs
+  # !rm -rf ./logs/
+
+  from torch.utils.tensorboard import SummaryWriter
+  writer = SummaryWriter()
+
+  from tqdm import tqdm
+  from torch.optim import AdamW
+  from torch.nn import CrossEntropyLoss
+  from bert_model import myModel
+
+  model = myModel()
+  print(model)
+
+  BACH_SIZE = 1
+  #TRAIN_RATIO = 0.9
+  LEARNING_RATE = 1e-4
+  EPOCH = 1
+  device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+  model = model.to(device) # Put model on device
+  optim = AdamW(model.parameters(), lr = LEARNING_RATE)
+  loss_fct = CrossEntropyLoss()
+
+  def decode_model_result(model_predict_table, offsets_mapping, labels_type_table):
+    model_predict_list = model_predict_table.tolist()
+    id_to_label = {id:label for label, id in labels_type_table.items()}
+    predict_y = []
+    pre_label_id = 0
+    for position_id, label_id in enumerate(model_predict_list):
+      if label_id!=0:
+        if pre_label_id!=label_id:
+          start = int(offsets_mapping[position_id][0])
+        end = int(offsets_mapping[position_id][1])
+      if pre_label_id!=label_id and pre_label_id!=0:
+        predict_y.append([id_to_label[pre_label_id], start, end])
+      pre_label_id = label_id
+    if pre_label_id!=0:
+      predict_y.append([id_to_label[pre_label_id], start, end])
+    return predict_y
+
+  def calculate_batch_score(batch_labels, model_predict_tables, offset_mappings, labels_type_table):
+      score_table = {"TP":0, "FP":0, "TN":0}
+      batch_size = model_predict_tables.shape[0]
+      for batch_id in range(batch_size):
+          smaple_prediction = decode_model_result(model_predict_tables[batch_id], offset_mappings[batch_id], labels_type_table)
+          smaple_ground_truth = batch_labels[batch_id]
+          #print(smaple_prediction)
+          #print(smaple_ground_truth)
+          # do the post_processing at here
+          # calculeate TP, TN, FP
+          smaple_ground_truth = set([tuple(token) for token in smaple_ground_truth])
+          smaple_prediction = set([tuple(token) for token in smaple_prediction])
+          score_table["TP"] += len( smaple_ground_truth & smaple_prediction)
+          score_table["TN"] += len( smaple_ground_truth - smaple_prediction)
+          score_table["FP"] += len( smaple_prediction - smaple_ground_truth)
+      if (score_table["TP"] + score_table["FP"])==0 or (score_table["TP"] + score_table["TN"])==0:
+        return 0, 0, 0
+
+      Precision = score_table["TP"] / (score_table["TP"] + score_table["FP"])
+      Recall = score_table["TP"] / (score_table["TP"] + score_table["TN"])
+      if(Precision + Recall) ==0:
+        return 0, 0, 0
+
+      F1_score = 2 * (Precision * Recall) / (Precision + Recall)
+      return Precision, Recall, F1_score
+
+  train_step = 0
+  val_step = 0
+  # one epoch about 8 minutes for T4 on Colab
+  # 5G memory needed when BACH_SIZE = 1
+  for epoch in range(EPOCH):
+    model.train()
+    # x_name,train_x, train_y, _
+    for batch_x_name, batch_x, batch_y, batch_labels in train_dataloader:
+      train_step += 1
+      optim.zero_grad()
+      batch_x["input_ids"] = batch_x["input_ids"].to(device)
+      batch_x["attention_mask"] = batch_x["attention_mask"].to(device)
+      batch_y = batch_y.long().to(device)
+      outputs = model(batch_x["input_ids"], batch_x["attention_mask"])
+      #print(batch_y.shape)
+      train_loss = loss_fct(outputs.transpose(-1, -2), batch_y)
+      #print("train_loss", train_loss)
+      writer.add_scalar('Loss/train', train_loss, train_step)
+
+      # calculate loss
+      train_loss.backward()
+      # update parameters
+      optim.step()
+
+    model.eval()
+    sum_val_F1 = 0
+    for batch_x_name, batch_x, batch_y, batch_labels in val_dataloader:
+      val_step += 1
+      optim.zero_grad()
+      batch_x["input_ids"] = batch_x["input_ids"].to(device)
+      batch_x["attention_mask"] = batch_x["attention_mask"].to(device)
+      batch_y = batch_y.long().to(device)
+      outputs = model(batch_x["input_ids"], batch_x["attention_mask"])
+      model_predict_tables = torch.argmax(outputs, dim=-1, keepdim=True)
+      model_predict_tables = model_predict_tables.squeeze(-1)
+      P, R, F1 = calculate_batch_score(batch_labels, model_predict_tables, batch_x["offset_mapping"], labels_type_table)
+      if val_step%50==0:
+        print("val_F1", F1)
+      val_loss = loss_fct(outputs.transpose(-1, -2), batch_y)
+      sum_val_F1 += float(F1)
+      #print("val_loss", val_loss)
+      writer.add_scalar('Loss/val', val_loss, val_step)
+      writer.add_scalar('F1/val', F1, val_step)
+    torch.save(model.state_dict(), "./model/" + "bert-base-cased"+"_"+str(epoch)+"_"+str(sum_val_F1/len(val_dataloader)))
+  writer.close()
+
+
+
+
+
+  for i, sample in enumerate(val_dataloader):
+    model.eval()
+    batch_x_name, encodings, y, batch_labels = sample
+    batch_size = encodings["input_ids"].shape[0]
+    #print(i)
+    #encodings = tokenizer(x, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True")
+    encodings["input_ids"] = encodings["input_ids"].to(device)
+    encodings["attention_mask"] = encodings["attention_mask"].to(device)
+    outputs = model(encodings["input_ids"], encodings["attention_mask"])
+    #output = softmax(outputs.logits)
+    #print(outputs.logits.shape)
+    model_predict_tables = torch.argmax(outputs, dim=-1, keepdim=True)
+    #if batch_size==1:
+    #  model_predict_table.unsqueeze(0)
+    model_predict_tables = model_predict_tables.squeeze(-1)
+
+    P, R, F1 = calculate_batch_score(batch_labels, model_predict_tables, encodings["offset_mapping"], labels_type_table)
+    print("Precision: %.2f, Recall %.2f, F1 score: %.2f" %(P, R, F1))
+    if i==20:
+      break
+
+  output_string = ""
+  for i, sample in enumerate(val_dataset):
+      model.eval()
+      x, y, id = sample
+      #print(id)
+      encodings = tokenizer(x, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True")
+      encodings["input_ids"] = encodings["input_ids"].to(device)
+      encodings["attention_mask"] = encodings["attention_mask"].to(device)
+      outputs = model(encodings["input_ids"], encodings["attention_mask"])
+      #output = softmax(outputs.logits)
+      model_predict_table = torch.argmax(outputs.squeeze(), dim=-1)
+      #print(model_predict_table)
+      model_predict_list = decode_model_result(model_predict_table, encodings["offset_mapping"][0], labels_type_table)
+      #print(model_predict_list)
+      for predict_label_range in model_predict_list:
+          predict_label_name, start, end = predict_label_range
+          predict_str = val_medical_record_dict[id][start:end]
+          # do the postprocessing at here
+          sample_result_str = (id +'\t'+ predict_label_name +'\t'+ str(start) +'\t'+ str(end) +'\t'+ predict_str + "\n")
+          output_string += sample_result_str
+      #print(y)
+  if not os.path.exists("./submission"):
+      os.mkdir("./submission")
+  with open("./submission/answer.txt", "w", encoding="utf-8") as f:
+      f.write(output_string)
+
+
+  print("### Other")
+  for i, sample in enumerate(val_dataset):
+    model.eval()
+    x, y, id = sample
+    print(id)
+    encodings = tokenizer(x, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True")
+    encodings["input_ids"] = encodings["input_ids"].to(device)
+    encodings["attention_mask"] = encodings["attention_mask"].to(device)
+    outputs = model(encodings["input_ids"], encodings["attention_mask"])
+    #output = softmax(outputs.logits)
+    model_predict_table = torch.argmax(outputs.squeeze(), dim=-1)
+    #print(model_predict_table)
+    print(decode_model_result(model_predict_table, encodings["offset_mapping"][0], labels_type_table))
+    print(y)
+    break
+
+
+
+
