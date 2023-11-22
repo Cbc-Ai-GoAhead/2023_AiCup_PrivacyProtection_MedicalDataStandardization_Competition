@@ -384,7 +384,8 @@ if __name__ == '__main__':
       #print("val_loss", val_loss)
       writer.add_scalar('Loss/val', val_loss, val_step)
       writer.add_scalar('F1/val', F1, val_step)
-    torch.save(model.state_dict(), "./model/" + "bert-base-cased"+"_"+str(epoch)+"_"+str(sum_val_F1/len(val_dataloader)))
+    #torch.save(model.state_dict(), "./model/" + "bert-base-cased"+"_"+str(epoch)+"_"+str(sum_val_F1/len(val_dataloader)))
+    torch.save(model, "./model/" + "bert-base-cased"+"_"+str(epoch)+"_"+str(sum_val_F1/len(val_dataloader)))
   writer.close()
 
 
@@ -454,7 +455,5 @@ if __name__ == '__main__':
     print(decode_model_result(model_predict_table, encodings["offset_mapping"][0], labels_type_table))
     print(y)
     break
-
-
 
 

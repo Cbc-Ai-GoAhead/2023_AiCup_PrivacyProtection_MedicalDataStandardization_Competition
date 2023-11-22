@@ -60,6 +60,52 @@ def extract_date_lable(train_label_dict, train_id_list):
     break
   print("----------extract_date_lable")
 
+def decode_model_result(model_predict_table, offsets_mapping, labels_type_table):
+  model_predict_list = model_predict_table.tolist()
+  id_to_label = {id:label for label, id in labels_type_table.items()}
+  predict_y = []
+  pre_label_id = 0
+  for position_id, label_id in enumerate(model_predict_list):
+    if label_id!=0:
+      if pre_label_id!=label_id:
+        start = int(offsets_mapping[position_id][0])
+      end = int(offsets_mapping[position_id][1])
+    if pre_label_id!=label_id and pre_label_id!=0:
+      predict_y.append([id_to_label[pre_label_id], start, end])
+    pre_label_id = label_id
+  if pre_label_id!=0:
+    predict_y.append([id_to_label[pre_label_id], start, end])
+  return predict_y
+
+def calculate_batch_score(batch_labels, model_predict_tables, offset_mappings, labels_type_table):
+    score_table = {"TP":0, "FP":0, "TN":0}
+    batch_size = model_predict_tables.shape[0]
+    for batch_id in range(batch_size):
+        smaple_prediction = decode_model_result(model_predict_tables[batch_id], offset_mappings[batch_id], labels_type_table)
+        smaple_ground_truth = batch_labels[batch_id]
+        #print(smaple_prediction)
+        #print(smaple_ground_truth)
+        # do the post_processing at here
+        # calculeate TP, TN, FP
+        smaple_ground_truth = set([tuple(token) for token in smaple_ground_truth])
+        smaple_prediction = set([tuple(token) for token in smaple_prediction])
+        score_table["TP"] += len( smaple_ground_truth & smaple_prediction)
+        score_table["TN"] += len( smaple_ground_truth - smaple_prediction)
+        score_table["FP"] += len( smaple_prediction - smaple_ground_truth)
+    if (score_table["TP"] + score_table["FP"])==0 or (score_table["TP"] + score_table["TN"])==0:
+      return 0, 0, 0
+
+    Precision = score_table["TP"] / (score_table["TP"] + score_table["FP"])
+    Recall = score_table["TP"] / (score_table["TP"] + score_table["TN"])
+    if(Precision + Recall) ==0:
+      return 0, 0, 0
+
+    F1_score = 2 * (Precision * Recall) / (Precision + Recall)
+    return Precision, Recall, F1_score
+
+
+
+
 import torch
 from torch.utils.data import Dataset, DataLoader
 
