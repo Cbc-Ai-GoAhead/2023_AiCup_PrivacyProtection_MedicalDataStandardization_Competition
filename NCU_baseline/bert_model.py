@@ -5,6 +5,8 @@ from transformers import AutoTokenizer, AutoModelForTokenClassification
 import torch
 from torch import nn
 from transformers import AutoTokenizer, AutoModel
+# from peft import LoraConfig, TaskType
+
 
 
 class myModel(torch.nn.Module):
@@ -31,6 +33,8 @@ class myModel(torch.nn.Module):
 if __name__ == '__main__':
     model_name = "bert-base-cased"
     labels_num = 22
+    # token完
+    
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForTokenClassification.from_pretrained(model_name, num_labels = labels_num)
 
@@ -38,7 +42,12 @@ if __name__ == '__main__':
     print(type(model))
     print(model)
 
-
+    #才丟入自定義的模型
     print("Self define Model")
+    # from peft import get_peft_model
+    # lora_config = LoraConfig(task_type=TaskType.SEQ_CLS, r=1, lora_alpha=1, lora_dropout=0.1)
     model = myModel()
+    # model = get_peft_model(model, lora_config)
+
+    
     print(model)

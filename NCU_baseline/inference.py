@@ -15,7 +15,14 @@ second_dataset_doc_path = "../data/Second_Phase_Dataset/Second_Phase_Text_Datase
 label_path = ["../data/First_Phase_Release_Correction/answer.txt", "../data/Second_Phase_Dataset/answer.txt"]
 val_dataset_doc_parh = "../data/valid_dataset/Validation_Release/"
 val_label_path = "../data/valid_dataset/answer.txt"
-  
+# import numpy as np
+# np.random.seed(42)
+
+# random.seed(seed)
+# np.random.seed(seed)
+# if is_torch_available():
+#     tt.manual_seed(seed)
+#     tt.cuda.manual_seed_all(seed)
 if __name__ == '__main__':
   print("first_dataset_path ={}, second_dataset_path={}".format(first_dataset_doc_path, second_dataset_doc_path))
   print("label_path ={}".format(label_path))
@@ -176,8 +183,15 @@ if __name__ == '__main__':
   print("Display Model------")
   from transformers import AutoTokenizer, AutoModelForTokenClassification
   model_name = "bert-base-cased"
+
+  
+
   tokenizer = AutoTokenizer.from_pretrained(model_name)
   model = AutoModelForTokenClassification.from_pretrained(model_name, num_labels = labels_num)
+  # tokenizer = AutoTokenizer.from_pretrained(model_name)
+  # model = AutoModelForTokenClassification.from_pretrained(model_name, num_labels = labels_num)
+
+
   # 需要先有模型做斷詞
   train_dataset = Privacy_protection_dataset(train_medical_record, train_labels, tokenizer, labels_type_table, "train")
   val_dataset = Privacy_protection_dataset(val_medical_record, val_labels, tokenizer, labels_type_table, "validation")
@@ -276,21 +290,60 @@ if __name__ == '__main__':
 
   device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
-  model_PATH = "model/bert-base-cased_0_0.5043912513830731"
-  model = torch.load(model_PATH)
-  # model = myModel(*args, **kwargs)
-  # model.load_state_dict(torch.load(model_PATH))
-  model.eval()
+  # model_PATH = "model_pre/bert-base-cased_9_12_0.5539107501245775"
+  # model = torch.load(model_PATH)
+  model_PATH = "model_pre/bert-base-cased_9_12_0.5539107501245775dict"
+  model = myModel()
+  model.load_state_dict(torch.load(model_PATH))
+  # model.eval()
+
+  
+
+  # state_dict = torch.load(model_PATH,map_location= device)
+  # print(f'Model loaded from <== {model_PATH}')
+
+  # model.load_state_dict(state_dict())
+
+# model.state_dict()
+  # model.eval()
 
  
 
   # model.state_dict()
   model = model.to(device)
   output_string = ""
-  for i, sample in enumerate(val_dataset):
+  with torch.no_grad():
+    for i, sample in enumerate(val_dataset):
+        model.eval()
+        x, y, id = sample
+        #print(id)
+        encodings = tokenizer(x, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True")
+        encodings["input_ids"] = encodings["input_ids"].to(device)
+        encodings["attention_mask"] = encodings["attention_mask"].to(device)
+        outputs = model(encodings["input_ids"], encodings["attention_mask"])
+        #output = softmax(outputs.logits)
+        model_predict_table = torch.argmax(outputs.squeeze(), dim=-1)
+        #print(model_predict_table)
+        model_predict_list = decode_model_result(model_predict_table, encodings["offset_mapping"][0], labels_type_table)
+        #print(model_predict_list)
+        for predict_label_range in model_predict_list:
+            predict_label_name, start, end = predict_label_range
+            predict_str = val_medical_record_dict[id][start:end]
+            # do the postprocessing at here
+            sample_result_str = (id +'\t'+ predict_label_name +'\t'+ str(start) +'\t'+ str(end) +'\t'+ predict_str + "\n")
+            output_string += sample_result_str
+        #print(y)
+    if not os.path.exists("./inference_testing"):
+        os.mkdir("./inference_testing")
+    with open("./inference_testing/answer_test09_dict_randomseed41_04.txt", "w", encoding="utf-8") as f:
+        f.write(output_string)
+
+
+    print("### Other")
+    for i, sample in enumerate(val_dataset):
       model.eval()
       x, y, id = sample
-      #print(id)
+      print(id)
       encodings = tokenizer(x, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True")
       encodings["input_ids"] = encodings["input_ids"].to(device)
       encodings["attention_mask"] = encodings["attention_mask"].to(device)
@@ -298,33 +351,6 @@ if __name__ == '__main__':
       #output = softmax(outputs.logits)
       model_predict_table = torch.argmax(outputs.squeeze(), dim=-1)
       #print(model_predict_table)
-      model_predict_list = decode_model_result(model_predict_table, encodings["offset_mapping"][0], labels_type_table)
-      #print(model_predict_list)
-      for predict_label_range in model_predict_list:
-          predict_label_name, start, end = predict_label_range
-          predict_str = val_medical_record_dict[id][start:end]
-          # do the postprocessing at here
-          sample_result_str = (id +'\t'+ predict_label_name +'\t'+ str(start) +'\t'+ str(end) +'\t'+ predict_str + "\n")
-          output_string += sample_result_str
-      #print(y)
-  if not os.path.exists("./inference_testing"):
-      os.mkdir("./inference_testing")
-  with open("./inference_testing/answer.txt", "w", encoding="utf-8") as f:
-      f.write(output_string)
-
-
-  print("### Other")
-  for i, sample in enumerate(val_dataset):
-    model.eval()
-    x, y, id = sample
-    print(id)
-    encodings = tokenizer(x, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True")
-    encodings["input_ids"] = encodings["input_ids"].to(device)
-    encodings["attention_mask"] = encodings["attention_mask"].to(device)
-    outputs = model(encodings["input_ids"], encodings["attention_mask"])
-    #output = softmax(outputs.logits)
-    model_predict_table = torch.argmax(outputs.squeeze(), dim=-1)
-    #print(model_predict_table)
-    print(decode_model_result(model_predict_table, encodings["offset_mapping"][0], labels_type_table))
-    print(y)
-    break
+      print(decode_model_result(model_predict_table, encodings["offset_mapping"][0], labels_type_table))
+      print(y)
+      break

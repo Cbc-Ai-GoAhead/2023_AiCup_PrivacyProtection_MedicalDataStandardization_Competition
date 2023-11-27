@@ -291,12 +291,28 @@ if __name__ == '__main__':
 
   BACH_SIZE = 12#1
   #TRAIN_RATIO = 0.9
-  LEARNING_RATE = 1e-4
-  EPOCH = 1
+  LEARNING_RATE = 1e-4 # default eps = 1e-8
+  # Number of training epochs (authors recommend between 2 and 4)
+  EPOCH = 10
   device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
   model = model.to(device) # Put model on device
+  ####
+  ##  optimizer
+  ####
   optim = AdamW(model.parameters(), lr = LEARNING_RATE)
   loss_fct = CrossEntropyLoss()
+
+  from transformers import get_linear_schedule_with_warmup
+
+  # Total number of training steps is number of batches * number of epochs.
+  total_steps = len(train_dataloader) * EPOCH
+
+  # Create the learning rate scheduler.
+  scheduler = get_linear_schedule_with_warmup(optim, 
+                                              num_warmup_steps = 0, # Default value in run_glue.py
+                                              num_training_steps = total_steps)
+
+
 
   def decode_model_result(model_predict_table, offsets_mapping, labels_type_table):
     model_predict_list = model_predict_table.tolist()
@@ -361,10 +377,14 @@ if __name__ == '__main__':
       #print("train_loss", train_loss)
       writer.add_scalar('Loss/train', train_loss, train_step)
 
+      
+      nn.utils.clip_grad_norm_(model.parameters(), 1.0)
       # calculate loss
       train_loss.backward()
       # update parameters
       optim.step()
+      # Update the learning rate.
+      scheduler.step()
 
     model.eval()
     sum_val_F1 = 0
@@ -386,84 +406,84 @@ if __name__ == '__main__':
       writer.add_scalar('Loss/val', val_loss, val_step)
       writer.add_scalar('F1/val', F1, val_step)
 
-    # model.save_pretrained(output_dir)
-    # output_dir= output_dir+"_token"
-    # tokenizer.save_pretrained(output_dir)
     output_dir = "./model_pre/" + "bert-base-cased"+"_"+str(epoch)+"_"+str(BACH_SIZE)+"_"+str(sum_val_F1/len(val_dataloader))
-    torch.save(model.state_dict(), output_dir+"dict")
+    # torch.save(model.state_dict(), output_dir+"dict")
     torch.save(model, output_dir)
-    # model.save_model(output_dir)
-    # model.save_pretrained(output_dir)
     
+    #sum_val_F1 = sum_val_F1/len(val_dataloader)?
     if sum_val_F1 > base_f1_score:
       base_f1_score = sum_val_F1
       output_dir = "./model_pre/best/" + "best_bert-base-cased"+"_"+str(epoch)+"_"+str(BACH_SIZE)+"_"+str(sum_val_F1/len(val_dataloader))
       # model.save_pretrained(output_dir)
       # output_dir= output_dir+"_token"
       # tokenizer.save_pretrained(output_dir)
-      torch.save(model.state_dict(), output_dir+"dict")
+      # torch.save(model.state_dict(), output_dir+"dict")
       torch.save(model, output_dir)
-      # model.save_model(output_dir)
-      # model.save_pretrained(output_dir)
+      #####
+      ### Inference
+      #####
+
+      # for i, sample in enumerate(val_dataloader):
+      #   model.eval()
+      #   batch_x_name, encodings, y, batch_labels = sample
+      #   batch_size = encodings["input_ids"].shape[0]
+      #   #print(i)
+      #   #encodings = tokenizer(x, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True")
+      #   encodings["input_ids"] = encodings["input_ids"].to(device)
+      #   encodings["attention_mask"] = encodings["attention_mask"].to(device)
+      #   outputs = model(encodings["input_ids"], encodings["attention_mask"])
+      #   #output = softmax(outputs.logits)
+      #   #print(outputs.logits.shape)
+      #   model_predict_tables = torch.argmax(outputs, dim=-1, keepdim=True)
+      #   #if batch_size==1:
+      #   #  model_predict_table.unsqueeze(0)
+      #   model_predict_tables = model_predict_tables.squeeze(-1)
+
+      #   P, R, F1 = calculate_batch_score(batch_labels, model_predict_tables, encodings["offset_mapping"], labels_type_table)
+      #   print("Precision: %.2f, Recall %.2f, F1 score: %.2f" %(P, R, F1))
+      #   if i==20:
+      #     break
+
+      output_string = ""
+      for i, sample in enumerate(val_dataset):
+          model.eval()
+          x, y, id = sample
+          #print(id)
+          encodings = tokenizer(x, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True")
+          encodings["input_ids"] = encodings["input_ids"].to(device)
+          encodings["attention_mask"] = encodings["attention_mask"].to(device)
+          outputs = model(encodings["input_ids"], encodings["attention_mask"])
+          #output = softmax(outputs.logits)
+          model_predict_table = torch.argmax(outputs.squeeze(), dim=-1)
+          #print(model_predict_table)
+          model_predict_list = decode_model_result(model_predict_table, encodings["offset_mapping"][0], labels_type_table)
+          #print(model_predict_list)
+          for predict_label_range in model_predict_list:
+              predict_label_name, start, end = predict_label_range
+              predict_str = val_medical_record_dict[id][start:end]
+              # do the postprocessing at here
+              # Predict_str 會抓到 \n 換行符號 要再處理
+              sample_result_str = (id +'\t'+ predict_label_name +'\t'+ str(start) +'\t'+ str(end) +'\t'+ predict_str + "\n")
+              output_string += sample_result_str
+          #print(y)
+      exp_path = "./submission"+"_"+str(epoch)+"_"+str(BACH_SIZE)
+      if not os.path.exists(exp_path):
+          os.mkdir(exp_path)
+      answer_path = exp_path+"/"+"answer_" +str(epoch)+".txt"
+      with open(answer_path, "w", encoding="utf-8") as f:
+          f.write(output_string)
+
+
+
+
+
   writer.close()
 
 
 
 
 
-  #####
-  ### Inference
-  #####
-
-  for i, sample in enumerate(val_dataloader):
-    model.eval()
-    batch_x_name, encodings, y, batch_labels = sample
-    batch_size = encodings["input_ids"].shape[0]
-    #print(i)
-    #encodings = tokenizer(x, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True")
-    encodings["input_ids"] = encodings["input_ids"].to(device)
-    encodings["attention_mask"] = encodings["attention_mask"].to(device)
-    outputs = model(encodings["input_ids"], encodings["attention_mask"])
-    #output = softmax(outputs.logits)
-    #print(outputs.logits.shape)
-    model_predict_tables = torch.argmax(outputs, dim=-1, keepdim=True)
-    #if batch_size==1:
-    #  model_predict_table.unsqueeze(0)
-    model_predict_tables = model_predict_tables.squeeze(-1)
-
-    P, R, F1 = calculate_batch_score(batch_labels, model_predict_tables, encodings["offset_mapping"], labels_type_table)
-    print("Precision: %.2f, Recall %.2f, F1 score: %.2f" %(P, R, F1))
-    if i==20:
-      break
-
-  output_string = ""
-  for i, sample in enumerate(val_dataset):
-      model.eval()
-      x, y, id = sample
-      #print(id)
-      encodings = tokenizer(x, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True")
-      encodings["input_ids"] = encodings["input_ids"].to(device)
-      encodings["attention_mask"] = encodings["attention_mask"].to(device)
-      outputs = model(encodings["input_ids"], encodings["attention_mask"])
-      #output = softmax(outputs.logits)
-      model_predict_table = torch.argmax(outputs.squeeze(), dim=-1)
-      #print(model_predict_table)
-      model_predict_list = decode_model_result(model_predict_table, encodings["offset_mapping"][0], labels_type_table)
-      #print(model_predict_list)
-      for predict_label_range in model_predict_list:
-          predict_label_name, start, end = predict_label_range
-          predict_str = val_medical_record_dict[id][start:end]
-          # do the postprocessing at here
-          # Predict_str 會抓到 \n 換行符號 要再處理
-          sample_result_str = (id +'\t'+ predict_label_name +'\t'+ str(start) +'\t'+ str(end) +'\t'+ predict_str + "\n")
-          output_string += sample_result_str
-      #print(y)
-  exp_path = "./submission"+"_"+str(epoch)+"_"+str(BACH_SIZE)
-  if not os.path.exists(exp_path):
-      os.mkdir(exp_path)
-  answer_path = exp_path+"/"+"answer.txt"
-  with open(answer_path, "w", encoding="utf-8") as f:
-      f.write(output_string)
+  
 
   #####
   ##  需要測試 Other
@@ -485,5 +505,6 @@ if __name__ == '__main__':
     print(y)
     break
 
+  
 
 

@@ -2,7 +2,7 @@ import pandas as pd
 i_doc_path = "./submission/answer.txt"
 answer_df = pd.read_csv(i_doc_path, names =["file","class", "start","end","value"], sep="\t")
 print(answer_df.head())
-some_values = ["DATE", "TIME", "DURATION", "TIME"]
+some_values = ["DATE", "TIME", "DURATION", "SET"]
 # 取出
 new_df = answer_df.loc[answer_df["class"].isin(some_values)]
 print(new_df)
