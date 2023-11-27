@@ -187,7 +187,7 @@ if __name__ == '__main__':
   
 
   tokenizer = AutoTokenizer.from_pretrained(model_name)
-  model = AutoModelForTokenClassification.from_pretrained(model_name, num_labels = labels_num)
+  # model = AutoModelForTokenClassification.from_pretrained(model_name, num_labels = labels_num)
   # tokenizer = AutoTokenizer.from_pretrained(model_name)
   # model = AutoModelForTokenClassification.from_pretrained(model_name, num_labels = labels_num)
 
@@ -292,10 +292,10 @@ if __name__ == '__main__':
 
   # model_PATH = "model_pre/bert-base-cased_9_12_0.5539107501245775"
   # model = torch.load(model_PATH)
-  model_PATH = "model_pre/bert-base-cased_9_12_0.5539107501245775dict"
+  model_PATH = "model/bert-base-cased_9_12_0.5539107501245775dict"
   model = myModel()
-  model.load_state_dict(torch.load(model_PATH))
-  # model.eval()
+  model.load_state_dict(torch.load(model_PATH, map_location=torch.device('cpu')))
+  model.eval()
 
   
 
@@ -308,7 +308,7 @@ if __name__ == '__main__':
   # model.eval()
 
  
-
+  device ='cpu'
   # model.state_dict()
   model = model.to(device)
   output_string = ""
@@ -335,7 +335,7 @@ if __name__ == '__main__':
         #print(y)
     if not os.path.exists("./inference_testing"):
         os.mkdir("./inference_testing")
-    with open("./inference_testing/answer_test09_dict_randomseed41_04.txt", "w", encoding="utf-8") as f:
+    with open("./inference_testing/pretrainanswer_test09_dict_randomseed41_04.txt", "w", encoding="utf-8") as f:
         f.write(output_string)
 
 

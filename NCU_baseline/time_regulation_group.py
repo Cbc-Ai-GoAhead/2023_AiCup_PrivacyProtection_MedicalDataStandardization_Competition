@@ -6,9 +6,10 @@ from datetime import *
 import pandas as pd
 import re
 # i_doc_path = "./submission/answer_drop_n.txt"
-i_doc_path = "./11_26_submission_9_12/answer.txt"#delet 5939 MR
+# i_doc_path = "./11_26_submission_9_12/answer.txt"#delet 5939 MR
 # i_doc_path = "./11_26_submission_9_12/answer_time_drop_202311-2710-2634-629846.txt"
 # i_doc_path = "./submission/answer.txt"
+i_doc_path = "./11_26_submission_9_12/submission_8_12/answer_8.txt"
 answer_df = pd.read_csv(i_doc_path, names =["file","class", "start","end","value"], dtype = str, sep="\t")
 
 print(answer_df.head())
