@@ -5,10 +5,12 @@ from dateutil.parser import *
 from datetime import *
 import pandas as pd
 import re
-#i_doc_path = "./submission/answer_drop_n.txt"
-i_doc_path = "./11_26_submission_9_12/answer.txt"
+# i_doc_path = "./submission/answer_drop_n.txt"
+i_doc_path = "./11_26_submission_9_12/answer.txt"#delet 5939 MR
+# i_doc_path = "./11_26_submission_9_12/answer_time_drop_202311-2710-2634-629846.txt"
 # i_doc_path = "./submission/answer.txt"
 answer_df = pd.read_csv(i_doc_path, names =["file","class", "start","end","value"], dtype = str, sep="\t")
+
 print(answer_df.head())
 #因為要新增第六個欄位 沒有的就給Nan
 
@@ -21,7 +23,7 @@ print("dropna class len = {}" .format(len(answer_df)))
 need_drop_row = []
 for row in range(len(answer_df)):
     value_of_class = answer_df.at[row, 'value']
-    print("row ={}, class = {}, value_of_class={}".format(row,answer_df.at[row, 'class'], value_of_class))
+    # print("row ={}, class = {}, value_of_class={}".format(row,answer_df.at[row, 'class'], value_of_class))
     # if value_of_class =="Nan" or value_of_class =="nan":
     #     need_drop_row.append(row)
     #     continue
@@ -56,6 +58,7 @@ for row in range(len(answer_df)):
             if (date_value =='now') or (date_value =="today"): #還有 .  /
                 len_iso_86_date= len(iso_86_date_list)
                 iso_86_date_list.append(iso_86_date_list[len_iso_86_date-1])
+                # 取原本的date 或是取前一個  目前取當前的date
                 answer_df.at[row, 'regulation_time'] = iso_86_date_list[len_iso_86_date-1]
                 continue
             now = parse(date_value)
@@ -76,7 +79,9 @@ for row in range(len(answer_df)):
             time_value = answer_df.at[row, 'value']
             ori_time_list.append(time_value)
             time_value_on = time_value.replace("the", "on")
-            print("----72")
+            # if time_value == "10:40 on the 10th of January 2014":
+            #     print("83------time_value!!!!!!!10:40 on the 10th of January")
+            # print("----72")
             #第一個部分 去掉文字
             if hasNumber(time_value_on):
                 None
@@ -84,7 +89,8 @@ for row in range(len(answer_df)):
                 time_drop_row.append(row)
                 continue
             now = parse(time_value_on)
-            print("----74")
+            # print("83------time_value!!!!!!!10:40 on the 10th of January now={}".format(now))
+            # print("----74")
             #26/08/2018 at 17:10hr
             # today = now.date()
             # year = rrule(YEARLY,dtstart=now,bymonth=8,bymonthday=13,byweekday=FR)[0].year
@@ -178,10 +184,13 @@ for row in range(len(answer_df)):
             Exception time value = :42 on 11/2/13.
             """
             try:
+                if time_value == "10:40 on the 10th of January 2014":
+                    print("time_value!!!!!!!10:40 on the 10th of January")
                 split_value = time_value.split(" ")
                 print("split_value = {}".format(split_value))
                 if len(split_value)>2:
                     if split_value[1]=='on':
+                        
                         day = parse(split_value[2])
                         print("on day = {}" .format(day))
                         tmp_time = split_value[0]
@@ -190,16 +199,32 @@ for row in range(len(answer_df)):
                         tmp_time = tmp_time.split(":")
                         print(tmp_time)
                         
-
-                        delta_time = relativedelta(hours=int(tmp_time[0]), minutes=int(tmp_time[1][:2]))
+                        #['145pm']
+                        if len(tmp_time)>1:
+                            # print("in len>1 tmp_time {}".format(tmp_time))
+                            delta_time = relativedelta(hours=int(tmp_time[0]), minutes=int(tmp_time[1][:2]))
+                        else:
+                            # print("in len tmp_time {} type = {}".format(tmp_time, type(tmp_time)))
+                            # for c in tmp_time[0]:
+                            #     print("c = {}, type = {}".format(c, type(c)))
+                            #     if c.isdigit():
+                            #         print("YES")
+                            # tmp_str_time = tmp_time[0]
+                            # print("".join([c for c in tmp_time[0] if c.isdigit()]))
+                            numbers = "".join([c for c in tmp_time[0] if c.isdigit()])
+                            
+                            # print("numbers = {}".format(numbers))
+                            delta_time = relativedelta(hours=int(numbers[:2]), minutes=int(numbers[2:]))
                         
                             
                         print(delta_time)
                         # relativedelta(hours=17)
                         final_time = day+delta_time
-                        print(final_time)
+                        
                         final_time = final_time.strftime('%Y-%m-%dT%H:%M')
+                        print(final_time)
                         answer_df.at[row, 'regulation_time'] = final_time
+                        iso_86_time_list.append(final_time)
                     else:#"at"
                         day = parse(split_value[0])
                         print("at day = {}" .format(day))
@@ -208,19 +233,19 @@ for row in range(len(answer_df)):
                         tmp_time = tmp_time.split(":")
                         print(tmp_time)
                         delta_time = relativedelta(hours=int(tmp_time[0]), minutes=int(tmp_time[1][:2]))
-                        print(delta_time)
+                        # print(delta_time)
                         # relativedelta(hours=17)
                         final_time = day+delta_time
-                        print(final_time)
+                        # print(final_time)
                         final_time = final_time.strftime('%Y-%m-%dT%H:%M')
                         answer_df.at[row, 'regulation_time'] = final_time
-
+                        iso_86_time_list.append(final_time)
                 elif len(split_value)==2:
                     tmp_time = split_value
                     tmp_time = tmp_time.replace(".", ":")
                     # 取當前Date
                     len_iso_86_date= len(iso_86_date_list)
-                    day = iso_86_date_list[len_iso_86_date]
+                    day = iso_86_date_list[len_iso_86_date-1]
                     day = parse(day)
                     tmp_time = tmp_time.split(":")
                     delta_time = relativedelta(hours=int(tmp_time[0]), minutes=int(tmp_time[1][:2]))
@@ -228,12 +253,94 @@ for row in range(len(answer_df)):
                     final_time = day+delta_time
                     final_time = final_time.strftime('%Y-%m-%dT%H:%M')
                     answer_df.at[row, 'regulation_time'] = final_time
+                    iso_86_time_list.append(final_time)
 
                 else:
-                    time_drop_row.append(row)
+                    #["0906hr"]
+                    # split_value = ['.00']
+                    # else number = 00
+                    # split_value = ['10:00hr']
+                    # else number = 1000
+                    
+                    numbers = "".join([c for c in split_value[0] if c.isdigit()])
+
+                    
+                    print("else number = {}".format(numbers))
+                    if (len(numbers)>2):#len =3, 4
+                        # 取當前Date
+                        print("before date number = {},".format(numbers))
+                        len_iso_86_date= len(iso_86_date_list)
+                        print("len_iso_86_date = {}".format(len_iso_86_date))
+                        day = parse(iso_86_date_list[len_iso_86_date-1])
+                        print("number = {}".format(numbers))
+                        delta_time = relativedelta(hours=int(numbers[:2]), minutes=int(numbers[2:]))
+
+                        print("day = {}, delta_time={}".format(day, delta_time))
+                        final_time = day+delta_time
+                        print("final_time = {}".format(final_time))
+                        final_time = final_time.strftime('%Y-%m-%dT%H:%M')
+                        print("number = {}, final_time= {}".format(numbers,final_time))
+                        
+                        answer_df.at[row, 'regulation_time'] = final_time
+                        iso_86_time_list.append(final_time)
+                    else: ##00
+                        answer_df.at[row, 'regulation_time'] = str(numbers)
+                        iso_86_time_list.append(str(numbers))
+                    
             except:
-                iso_86_time_list.append(time_value)
-                print("Exception time value = {}".format(time_value))
+                # split_value = ['0933', 'on', 'the', '24/1/14']
+                # Exception time value = 0933 on the 24/1/14
+
+                # split_value = ['1300', 'onthe', '20th', 'of', 'January', '2014']
+                # at day = 1300-11-27 00:00:00
+                # ['20th']
+                # Exception time value = 1300 onthe 20th of January 2014
+                
+                # iso_86_time_list.append(time_value)
+                try:
+                    split_time_value = time_value.split(" ")
+                    if len(time_value)>4:
+                        print("303  split_time_value={}".format(split_time_value))
+                        tmp_day = " ".join([c for c in split_value[2:6]])
+                        print("tmpday = {} type={}".format(tmp_day,type(tmp_day)))
+                        print("306 parse= {}".format(parse(tmp_day)))
+                        day = parse(tmp_day)
+                        print("309 day = {} time {}".format(split_time_value[0][:2], split_time_value[0][2:]))
+                        delta_time = relativedelta(hours=int(split_time_value[0][:2]), minutes=int(split_time_value[0][2:]))
+                        print("309 delta_time = {}".format(delta_time))
+                        final_time = day+delta_time
+                        print("final_time ={}".format(final_time))
+                        final_time = final_time.strftime('%Y-%m-%dT%H:%M')
+                        print("314 final_time shift ={}".format(final_time))
+                        answer_df.at[row, 'regulation_time'] = final_time
+                        print(answer_df.at[row, 'regulation_time'])
+                        print("316 after final_time shift ={}".format(final_time))
+                        iso_86_time_list.append(time_value)
+                        continue
+                    val_t = ""
+                    val_day = ""
+                    print("299 time_value ={}".format(time_value))
+                    for val in time_value:
+                        numbers = "".join([c for c in val if c.isdigit()])
+                        if len(numbers)<5:
+                            val_t = numbers
+                        else:
+                            val_day = numbers
+                    
+                    day = parse(val_day)
+                    # print("number = {}".format(numbers))
+                    delta_time = relativedelta(hours=int(val_t[:2]), minutes=int(val_t[2:]))
+    
+                    print("day = {}, delta_time={}".format(day, delta_time))
+                    final_time = day+delta_time
+                    final_time = final_time.strftime('%Y-%m-%dT%H:%M')
+                    answer_df.at[row, 'regulation_time'] = final_time
+                    iso_86_time_list.append(time_value)
+                except Exception as e:
+                    print("error = {}".format(e))
+                    print("Exception time value = {}".format(time_value))
+                    answer_df.at[row, 'regulation_time'] = time_value
+                    # time_drop_row.append(row)
 
             # #第二個部分 正規化
             # >>> relativedelta(hours=17)
@@ -276,6 +383,7 @@ for row in range(len(answer_df)):
             # answer_df.at[row, 'value'] = iso_86_time
             iso_86_duration_list.append(duration_value)
             print("Exception duration value = {}".format(duration_value))
+            answer_df.at[row, 'regulation_time'] = duration_value
     elif value_of_class == 'SET' :
         time_value=""
         try:
@@ -299,21 +407,29 @@ for row in range(len(answer_df)):
             # answer_df.at[row, 'value'] = iso_86_time
             iso_86_set_list.append(set_value)
             print("Exception set value = {}".format(set_value))
+answer_df = answer_df.drop(time_drop_row).reset_index(drop = True)
+# answer_df = answer_df.fillna("")
+# import numpy as np
+answer_df = answer_df.replace("nan",'')
+# answer_df = answer_df[answer_df['class'].isin(ori_class_list)].reset_index(drop = True)
+# split_value = ['.00']
+# else number = 00
+# ----74
     # O: 讀取DataFrame以後 直接在欄位新增值 後續存檔 沒有值的欄位會補上Nan
     # X:讀取DataFrame 新增欄位regulation_time 就會自動補值 Nan 
     # else:
     #     answer_df.at[row, 'regulation_time'] = 'Nan'
 # print(answer_df.head())
 # print(answer_df[:50])
-# from datetime import datetime
-# timestr = datetime.now().strftime('%Y%m-%d%H-%M%S-%f')
-# answer_df.to_csv("./11_26_submission_9_12/answer_time_drop_{}.txt".format(timestr), sep = '\t', header=False ,index = None)
-date_df = pd.DataFrame(columns = ['bert_date','regular_date'])
-time_df = pd.DataFrame(columns = ['bert_time','regular_time'])
-date_df['bert_date'] = ori_date_list
-date_df['regular_date'] = iso_86_date_list
+from datetime import datetime
+timestr = datetime.now().strftime('%Y%m-%d%H-%M%S-%f')
+answer_df.to_csv("./11_26_submission_9_12/answer_time_drop_{}.txt".format(timestr), sep = '\t', header=False ,index = None)
+# date_df = pd.DataFrame(columns = ['bert_date','regular_date'])
+# time_df = pd.DataFrame(columns = ['bert_time','regular_time'])
+# date_df['bert_date'] = ori_date_list
+# date_df['regular_date'] = iso_86_date_list
 # print("ori_time_list len ={}, iso_86_time_list={}".format(len(ori_time_list), len(iso_86_time_list)))
-time_df['bert_time'] = ori_time_list
-time_df['regular_time'] = iso_86_time_list
-date_df.to_csv("./11_26_submission_9_12/answer_time_drop_date.txt", sep = '\t', header=True ,index = None)
-time_df.to_csv("./11_26_submission_9_12/answer_time_drop_time.txt", sep = '\t', header=True ,index = None)
+# time_df['bert_time'] = ori_time_list
+# time_df['regular_time'] = iso_86_time_list
+# date_df.to_csv("./11_26_submission_9_12/answer_time_drop_date.txt", sep = '\t', header=True ,index = None)
+# time_df.to_csv("./11_26_submission_9_12/answer_time_drop_time.txt", sep = '\t', header=True ,index = None)
