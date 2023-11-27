@@ -263,13 +263,11 @@ if __name__ == '__main__':
   # print("post_proxessing(predict_result) ={}".format(post_proxessing(predict_result)))
   # # print(expected_result)
   # print("predict_result == expected_result = {}, post_proxessing(predict_result) == expected_result={}".format(predict_result == expected_result, post_proxessing(predict_result) == expected_result)) # token range clipping problem
-
+  #####
+  ##  Training
+  #####
   print("### Train")
-  # Load the TensorBoard notebook extension
-  # %load_ext tensorboard
-  # # Clear any logs from previous runs
-  # !rm -rf ./logs/
-
+  finetune_model(train_dataloader, val_dataloader, val_dataset)
   
 
   
