@@ -1,3 +1,4 @@
+from pprint import pprint as pp
 def read_text_from_file(file_path):
   medical_record_dict ={}
   for data_path in file_path:
@@ -253,3 +254,81 @@ def calculate_batch_score(batch_labels, model_predict_tables, offset_mappings, l
 
   F1_score = 2 * (Precision * Recall) / (Precision + Recall)
   return Precision, Recall, F1_score
+
+def print_dataset_loaderstatus(train_dataset, train_dataloader, labels_type_table, BACH_SIZE):
+    #####
+    ##  Testing DataSet
+    #####
+    print(len(train_dataset))
+    for sample in train_dataset:
+        train_x, train_y,_ = sample
+        # print("train_x = {} , train_y={}".format(train_x, train_y))
+        # print(train_y)
+        break
+    print("-----------------")
+    # print("DataLoader")
+    # print(len(train_dataloader))
+    for sample in train_dataloader:
+        # batch_medical_record, encodings, batch_labels_tensor, batch_labels
+        x_name,train_x, train_y, _ = sample
+        # print("x_name = {},".format(x_name))
+        # print("train_x = {}, train_y= {}".format(train_x, train_y))
+        # print("len train_x = {}, train_y= {}".format(len(train_x), len(train_y)))
+        print("-----------------")
+        # print(x_name[4440:4448])
+        # ['HOSPITAL', ]
+        # print(x_name[143:155])
+        break
+    print("----------------")
+    #show the first batch labels embeddings
+    print(labels_type_table)
+    for i in range(BACH_SIZE):
+        print(train_y[i].tolist())
+        # 會補成512長度
+        print("len train_y[i] ={}".format(len(train_y[i].tolist())))
+def print_annotated_medical_report(tokenizer,train_dataset, train_medical_record_dict, train_label_dict):
+    '''
+    測試讀取的 medical report 內容
+    #　可以在考慮把＼ｎ去掉  和 \t
+    output : 全部的 sequence pairs
+    '''
+    print("--------------------------")
+    print("#### Tokenizer")
+    #some exist id "10", "11", "12", "file16529"
+    id = "file10996"
+    print(train_medical_record_dict[id])
+    pp(train_label_dict[id])
+    print("Number of character in medical_record:", len(train_medical_record_dict[id]))
+
+    example_medical_record = train_medical_record_dict[id]
+    example_labels = train_label_dict[id]
+
+    encodings = tokenizer(example_medical_record, padding=True, return_tensors="pt", return_offsets_mapping="True")
+    print(encodings.keys())
+    #print(encodings["input_ids"])
+    #print(encodings["attention_mask"])
+    print("encodings[offset_mapping] = {} ".format(encodings["offset_mapping"]))
+    print("encodings[offset_mapping] shape= {} ".format(encodings["offset_mapping"].shape))
+    #print(tokenizer.decode(encodings["input_ids"][0])) #get the original text
+
+
+    print("encodings[input_ids].shape = {} ".format(encodings["input_ids"].shape))
+    print("encodings[attention_mask]. shape= {} ".format(encodings["attention_mask"].shape))
+    print("len(encodings[offset_mapping][0])= {} ".format(len(encodings["offset_mapping"][0])))
+    # print(encodings["input_ids"].shape)
+    # print(encodings["attention_mask"].shape)
+    # print(len(encodings["offset_mapping"][0]))
+
+    print("### Testing find_token_ids (the funtion in Privacy_protection_dataset)")
+
+    print("train_label_dict[id][3][1]={}, train_label_dict[id][3][2]={}" .format(train_label_dict[id][3][1], train_label_dict[id][3][2]))
+    encodeing_start, encodeing_end = train_dataset.find_token_ids(train_label_dict[id][3][1], train_label_dict[id][3][2], encodings["offset_mapping"][0])
+    print("encodeing_start={} encodeing_end={}".format(encodeing_start, encodeing_end))
+
+    #get the original text
+    print(tokenizer.decode(encodings["input_ids"][0][encodeing_start:encodeing_end])) #sometime will error
+    # 有時候 encode mapping會錯誤
+    decode_start_pos = int(encodings["offset_mapping"][0][encodeing_start][0])
+    decode_end_pos = int(encodings["offset_mapping"][0][encodeing_end-1][1])
+    print(decode_start_pos, decode_end_pos)
+    print(train_medical_record_dict[id][decode_start_pos:decode_end_pos])

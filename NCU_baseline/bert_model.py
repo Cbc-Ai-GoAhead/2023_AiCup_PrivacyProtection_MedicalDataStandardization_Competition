@@ -7,7 +7,7 @@ from torch import nn
 from transformers import AutoTokenizer, AutoModel
 # from peft import LoraConfig, TaskType
 
-
+from peft import LoraConfig, get_peft_model, TaskType
 
 class myModel(torch.nn.Module):
 
@@ -34,20 +34,29 @@ if __name__ == '__main__':
     model_name = "bert-base-cased"
     labels_num = 22
     # token完
-    
+    # bert 預訓練模型
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForTokenClassification.from_pretrained(model_name, num_labels = labels_num)
+    peft_config = LoraConfig(
+    task_type=TaskType.TOKEN_CLS, inference_mode=False, r=16, lora_alpha=16, lora_dropout=0.1, bias="all"
+    )#target_modules=["key", "query", "value"]
 
-    print(type(tokenizer))
-    print(type(model))
-    print(model)
+    model = get_peft_model(model, peft_config)
+    print(model.print_trainable_parameters())
+    model.save_pretrained("./model/bert_save_testing")
+    # print(type(tokenizer))
+    # print(type(model))
+    # print(model)
 
     #才丟入自定義的模型
     print("Self define Model")
-    # from peft import get_peft_model
+    # LORA_R = 16  # 設定LORA（Layer-wise Random Attention）的R值 Set LORA R value
+    # LORA_ALPHA = 16  # 設定LORA的Alpha值 Set LORA Alpha value
+    # LORA_DROPOUT = 0.05  # 設定LORA的Dropout率 Set LORA dropout value
+   
     # lora_config = LoraConfig(task_type=TaskType.SEQ_CLS, r=1, lora_alpha=1, lora_dropout=0.1)
-    model = myModel()
+    # model = myModel()
     # model = get_peft_model(model, lora_config)
 
     
-    print(model)
+    # print(model)

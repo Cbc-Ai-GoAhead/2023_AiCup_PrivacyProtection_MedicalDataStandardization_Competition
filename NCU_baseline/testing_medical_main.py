@@ -14,7 +14,9 @@ val_dataset_doc_parh = "../data/valid_dataset/Validation_Release/"
 val_label_path = "../data/valid_dataset/answer.txt"
 
 if __name__ == '__main__':
-
+  #####
+  ##  Load Data
+  #####
   print("first_dataset_path ={}, second_dataset_path={}".format(first_dataset_doc_path, second_dataset_doc_path))
   print("label_path ={}".format(label_path))
   print("#### 1 Load First and Second Dataset")
@@ -29,7 +31,7 @@ if __name__ == '__main__':
   print("num of train_path ={}, val_path={}".format(len(train_path), len(val_path)))#1734 #560
 
   
-  pp("file_text = {}".format(file_text[:50]))# pp ->可以印出 \t 的資訊
+  #pp("file_text = {}".format(file_text[:50]))# pp ->可以印出 \t 的資訊
 
   print("---------------------")
   #####
@@ -61,7 +63,7 @@ if __name__ == '__main__':
   train_label_dict.update(second_dataset_label_dict)
   train_date_label_dict.update(second_date_label_dict)
   val_label_dict, val_date_label_dict = create_label_dict(val_label_path)
-  # print("val_date_label_dict = {}".format(val_date_label_dict))
+
   #####
   ##  Check the number of data
   #####
@@ -176,76 +178,13 @@ if __name__ == '__main__':
   val_dataloader = DataLoader( val_dataset, batch_size = BACH_SIZE, shuffle = False, collate_fn = val_dataset.collate_fn)
   print("----------------")
 
-  #####
-  ##  Testing DataSet
-  #####
-  print(len(train_dataset))
-  for sample in train_dataset:
-    train_x, train_y,_ = sample
-    # print("train_x = {} , train_y={}".format(train_x, train_y))
-    # print(train_y)
-    break
-  print("-----------------")
-  # print("DataLoader")
-  # print(len(train_dataloader))
-  for sample in train_dataloader:
-    # batch_medical_record, encodings, batch_labels_tensor, batch_labels
-    x_name,train_x, train_y, _ = sample
-    # print("x_name = {},".format(x_name))
-    # print("train_x = {}, train_y= {}".format(train_x, train_y))
-    # print("len train_x = {}, train_y= {}".format(len(train_x), len(train_y)))
-    print("-----------------")
-    # print(x_name[4440:4448])
-    # ['HOSPITAL', ]
-    # print(x_name[143:155])
-    break
-  print("----------------")
-  #show the first batch labels embeddings
-  print(labels_type_table)
-  for i in range(BACH_SIZE):
-    print(train_y[i].tolist())
-    # 會補成512長度
-    print("len train_y[i] ={}".format(len(train_y[i].tolist())))
+  print_dataset_loaderstatus(train_dataset, train_dataloader, labels_type_table, BACH_SIZE)
 
   #####
   ##  Testing Tokenizer  這裡就是在告訴我們 tokenzer完後文本的狀況 
   ## 所以助教給我們程式碼 已經是有修改長度到512 並且文本和label的id有重新修改過
   #####
-  print("--------------------------")
-  print("#### Tokenizer")
-  #some exist id "10", "11", "12", "file16529"
-  id = "file10996"
-  print(train_medical_record_dict[id])
-  pp(train_label_dict[id])
-  print("Number of character in medical_record:", len(train_medical_record_dict[id]))
-
-  example_medical_record = train_medical_record_dict[id]
-  example_labels = train_label_dict[id]
-
-  encodings = tokenizer(example_medical_record, padding=True, return_tensors="pt", return_offsets_mapping="True")
-  print(encodings.keys())
-  #print(encodings["input_ids"])
-  #print(encodings["attention_mask"])
-  print(encodings["offset_mapping"])
-  print(encodings["offset_mapping"].shape)
-  #print(tokenizer.decode(encodings["input_ids"][0])) #get the original text
-
-  print(encodings["input_ids"].shape)
-  print(encodings["attention_mask"].shape)
-  print(len(encodings["offset_mapping"][0]))
-
-  print("### Testing find_token_ids (the funtion in Privacy_protection_dataset)")
-
-  encodeing_start, encodeing_end = train_dataset.find_token_ids(train_label_dict[id][3][1], train_label_dict[id][3][2], encodings["offset_mapping"][0])
-  print(encodeing_start, encodeing_end)
-
-  #get the original text
-  print(tokenizer.decode(encodings["input_ids"][0][encodeing_start:encodeing_end])) #sometime will error
-
-  decode_start_pos = int(encodings["offset_mapping"][0][encodeing_start][0])
-  decode_end_pos = int(encodings["offset_mapping"][0][encodeing_end-1][1])
-  print(decode_start_pos, decode_end_pos)
-  print(train_medical_record_dict[id][decode_start_pos:decode_end_pos])
+  
 
   def post_proxessing(model_result:list):
     #need fix
@@ -266,8 +205,9 @@ if __name__ == '__main__':
   #####
   ##  Training
   #####
-  print("### Train")
-  finetune_model(train_dataloader, val_dataloader, val_dataset)
+  # print("### Train")
+  # finetune_model(train_dataloader, val_dataloader, val_dataset)
+  print_annotated_medical_report(tokenizer, train_dataset, train_medical_record_dict, train_label_dict)
   
 
   

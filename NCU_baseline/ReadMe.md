@@ -40,3 +40,10 @@ https://stackoverflow.com/questions/72108945/saving-finetuned-model-locally
 改成用 if best 就作evaluation
 
 docker run -it --gpus '"device=0"' --shm-size=64G --net=host  -v /home/cbc/2023_projects/NCU_NLP/NLP-1:/NLP   -v /etc/localtime:/etc/localtime:ro  --name aicup_hw2 sed_core:latest /bin/bash
+pip install peft
+pip show typing-extensions
+pip install typing-extensions==4.3.0
+------
+model.save_pretrained("./model/bert_save_testing")
+ImportError: cannot import name 'soft_unicode' from 'markupsafe' (/opt/conda/lib/python3.8/site-packages/markupsafe/__init__.py)
+pip install markupsafe==2.0.1
