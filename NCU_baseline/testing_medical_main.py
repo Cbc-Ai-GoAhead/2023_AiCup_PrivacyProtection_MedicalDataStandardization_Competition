@@ -42,7 +42,7 @@ if __name__ == '__main__':
   train_medical_record_dict = {} #x
   train_medical_record_dict = read_text_from_file(train_path)
 
-  # print("train_medical_record_dict = {}".format(train_medical_record_dict))
+  print("train_medical_record_dict = {}".format(train_medical_record_dict))
   # #load validation data from path
   print("#### load validation data from path")
   val_medical_record_dict = {} #x

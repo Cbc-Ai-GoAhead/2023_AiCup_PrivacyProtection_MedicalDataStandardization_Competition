@@ -8,9 +8,13 @@ def read_text_from_file(file_path):
     
     with open(data_path, "r", encoding="utf-8") as f:
       file_text = f.read()
-      # 文本一列一列讀進來
+      # file_text = f.read().splitlines()
+      # 文本直接整個讀進來
+      print("file txt =")
+      pp(file_text)
       medical_record_dict[file_id] = file_text
       # print(train_medical_record_dict[file_id] )
+    break
 
   return medical_record_dict
 
@@ -321,7 +325,7 @@ def print_annotated_medical_report(tokenizer,train_dataset, train_medical_record
 
     print("### Testing find_token_ids (the funtion in Privacy_protection_dataset)")
 
-    print("train_label_dict[id][3][1]={}, train_label_dict[id][3][2]={}" .format(train_label_dict[id][3][1], train_label_dict[id][3][2]))
+    print("train_label_dict[id][3][0]={}, train_label_dict[id][3][1]={}, train_label_dict[id][3][2]={}" .format(train_label_dict[id][3][0], train_label_dict[id][3][1], train_label_dict[id][3][2]))
     encodeing_start, encodeing_end = train_dataset.find_token_ids(train_label_dict[id][3][1], train_label_dict[id][3][2], encodings["offset_mapping"][0])
     print("encodeing_start={} encodeing_end={}".format(encodeing_start, encodeing_end))
 
