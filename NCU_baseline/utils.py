@@ -135,9 +135,11 @@ class Privacy_protection_dataset(Dataset):
     encodeing_end = 0
     for token_id, token_range in enumerate(offset_mapping):
       token_start, token_end = token_range
+      print("---token_id = {}, token range={}".format(token_id, token_range))
       #if token range one side out of label range, still take the token
       if token_start == 0 and token_end == 0: #special tocken
         continue
+      print("label_start ={}, label_end={}, token_end={}, token_start={}".format(label_start, label_end ,token_end, token_start))
       if label_start<token_end and label_end>token_start:
         if token_id<encodeing_start:
           encodeing_start = token_id
@@ -146,12 +148,16 @@ class Privacy_protection_dataset(Dataset):
 
   def encode_labels_position(self, batch_lables:list, offset_mapping:list):
     """ encode the batch_lables's position"""
+    print("encode_labels_position-----")
     batch_encodeing_labels = []
     for sample_labels, sample_offsets in zip(batch_lables, offset_mapping):#offset_mapping用意是?
       encodeing_labels = []
       for label in sample_labels:
         # tokenizer後 id 要重新排?
+        # 文本超出長度會變成null
+        print("label[1] = {}, label[2]={}, sample_offsets={}".format(label[1], label[2], sample_offsets))
         encodeing_start, encodeing_end = self.find_token_ids(label[1], label[2], sample_offsets)#label 的位置也要做position encoding
+        print("encodeing_start = {}, encodeing_end={}".format(encodeing_start, encodeing_end))
         encodeing_labels.append([label[0], encodeing_start, encodeing_end])
       batch_encodeing_labels.append(encodeing_labels)
     return batch_encodeing_labels
@@ -215,7 +221,17 @@ class Privacy_protection_dataset(Dataset):
 ####
 ## Decode
 ####
-
+## deletr whitespacle
+def delete_whitespace(predict_label_name, predict_str):
+#   ori_class_list = ["PATIENT", "DOCTOR", "USERNAME", "PROFESSION","ROOM", "DEPARTMENT", "HOSPITAL"\
+# ,"ORGANIZATION","STREET","CITY","STATE","COUNTRY","ZIP", "LOCATION-OTHER", "AGE",\
+#  "DATE", "TIME", "DURATION", "SET", "PHONE", "FAX", "EMAIL", "URL","IPADDR",\
+#  "SSN", "MEDICALRECORD","HEALTHPLAN", "ACCOUNT","LICENSE", "VECHICLE","DEVICE",\
+#  "BIOID","IDNUM","OTHER"]
+  str_no_space = ["ZIP","AGE","SSN", "MEDICALRECORD","IDNUM",]
+  if predict_label_name in str_no_space:
+    predict_str = predict_str.replace(' ', '')
+  return predict_str
 def decode_model_result(model_predict_table, offsets_mapping, labels_type_table):
     model_predict_list = model_predict_table.tolist()
     id_to_label = {id:label for label, id in labels_type_table.items()}

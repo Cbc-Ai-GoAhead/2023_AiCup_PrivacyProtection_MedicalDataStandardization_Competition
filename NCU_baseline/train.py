@@ -93,6 +93,10 @@ def decode_model(model, val_dataset):
         predict_str = val_medical_record_dict[id][start:end]
         # do the postprocessing at here
         # Predict_str 會抓到 \n 換行符號 要再處理
+        # 先處理 whitespce
+        predict_str= predict_str.strip()
+        predict_str = delete_whitespace(predict_label_name, predict_str)
+        
         sample_result_str = (id +'\t'+ predict_label_name +'\t'+ str(start) +'\t'+ str(end) +'\t'+ predict_str + "\n")
         output_string += sample_result_str
     #print(y)# y 有跟原本一樣嗎？
