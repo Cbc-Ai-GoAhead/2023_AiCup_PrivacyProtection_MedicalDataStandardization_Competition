@@ -4,7 +4,7 @@ def read_text_from_file(file_path):
   for data_path in file_path:
     # print("data_path = {}" .format(data_path))
     file_id = data_path.split("/")[-1].split(".txt")[0]
-    # print("file_id = {}" .format(file_id))
+    print("file_id = {}" .format(file_id))
     
     with open(data_path, "r", encoding="utf-8") as f:
       file_text = f.read()
@@ -135,11 +135,9 @@ class Privacy_protection_dataset(Dataset):
     encodeing_end = 0
     for token_id, token_range in enumerate(offset_mapping):
       token_start, token_end = token_range
-      print("---token_id = {}, token range={}".format(token_id, token_range))
       #if token range one side out of label range, still take the token
       if token_start == 0 and token_end == 0: #special tocken
         continue
-      print("label_start ={}, label_end={}, token_end={}, token_start={}".format(label_start, label_end ,token_end, token_start))
       if label_start<token_end and label_end>token_start:
         if token_id<encodeing_start:
           encodeing_start = token_id
@@ -148,16 +146,12 @@ class Privacy_protection_dataset(Dataset):
 
   def encode_labels_position(self, batch_lables:list, offset_mapping:list):
     """ encode the batch_lables's position"""
-    print("encode_labels_position-----")
     batch_encodeing_labels = []
     for sample_labels, sample_offsets in zip(batch_lables, offset_mapping):#offset_mapping用意是?
       encodeing_labels = []
       for label in sample_labels:
         # tokenizer後 id 要重新排?
-        # 文本超出長度會變成null
-        print("label[1] = {}, label[2]={}, sample_offsets={}".format(label[1], label[2], sample_offsets))
         encodeing_start, encodeing_end = self.find_token_ids(label[1], label[2], sample_offsets)#label 的位置也要做position encoding
-        print("encodeing_start = {}, encodeing_end={}".format(encodeing_start, encodeing_end))
         encodeing_labels.append([label[0], encodeing_start, encodeing_end])
       batch_encodeing_labels.append(encodeing_labels)
     return batch_encodeing_labels
@@ -210,6 +204,8 @@ class Privacy_protection_dataset(Dataset):
 
     # 文本丟入 encoding進行編碼 進行斷詞
     encodings = self.tokenizer(batch_medical_record, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True") # truncation=True
+    # truncation=True 代表有斷詞
+      
     # encode label
     # 丟入 bert
     # 第0句話輸出的token id =0 第1句話 id =1, padding mask =1 不是padding的id都是1
@@ -221,17 +217,7 @@ class Privacy_protection_dataset(Dataset):
 ####
 ## Decode
 ####
-## deletr whitespacle
-def delete_whitespace(predict_label_name, predict_str):
-#   ori_class_list = ["PATIENT", "DOCTOR", "USERNAME", "PROFESSION","ROOM", "DEPARTMENT", "HOSPITAL"\
-# ,"ORGANIZATION","STREET","CITY","STATE","COUNTRY","ZIP", "LOCATION-OTHER", "AGE",\
-#  "DATE", "TIME", "DURATION", "SET", "PHONE", "FAX", "EMAIL", "URL","IPADDR",\
-#  "SSN", "MEDICALRECORD","HEALTHPLAN", "ACCOUNT","LICENSE", "VECHICLE","DEVICE",\
-#  "BIOID","IDNUM","OTHER"]
-  str_no_space = ["ZIP","AGE","SSN", "MEDICALRECORD","IDNUM",]
-  if predict_label_name in str_no_space:
-    predict_str = predict_str.replace(' ', '')
-  return predict_str
+
 def decode_model_result(model_predict_table, offsets_mapping, labels_type_table):
     model_predict_list = model_predict_table.tolist()
     id_to_label = {id:label for label, id in labels_type_table.items()}
@@ -315,15 +301,18 @@ def print_annotated_medical_report(tokenizer,train_dataset, train_medical_record
     print("--------------------------")
     print("#### Tokenizer")
     #some exist id "10", "11", "12", "file16529"
-    id = "file10996"
+    id = "109"#"file10996"
     print(train_medical_record_dict[id])
     pp(train_label_dict[id])
     print("Number of character in medical_record:", len(train_medical_record_dict[id]))
 
     example_medical_record = train_medical_record_dict[id]
     example_labels = train_label_dict[id]
-
     encodings = tokenizer(example_medical_record, padding=True, return_tensors="pt", return_offsets_mapping="True")
+
+    print("not truncation len= {}".format(len(encodings.input_ids)))
+    encodings = tokenizer(example_medical_record, padding=True, truncation=True,return_tensors="pt", return_offsets_mapping="True")
+    print("truncation len= {}".format(len(encodings.input_ids)))
     print(encodings.keys())
     #print(encodings["input_ids"])
     #print(encodings["attention_mask"])
