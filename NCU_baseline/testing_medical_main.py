@@ -4,7 +4,7 @@ from utils import *
 
 import torch
 from torch import nn
-from transformers import AutoTokenizer, AutoModel
+from transformers import AutoTokenizer, AutoModel, AutoConfig
 
 # os.mkdir("./model/")
 first_dataset_doc_path = "../data/First_Phase_Release_Correction/First_Phase_Text_Dataset/"
@@ -167,9 +167,13 @@ if __name__ == '__main__':
 
   print("Display Model------")
   from transformers import AutoTokenizer, AutoModelForTokenClassification
-  model_name = "bert-base-cased"
-  tokenizer = AutoTokenizer.from_pretrained(model_name)
-  model = AutoModelForTokenClassification.from_pretrained(model_name, num_labels = labels_num)
+  pretrained_weights = "bert-base-cased"
+  tokenizer = AutoTokenizer.from_pretrained(pretrained_weights)
+
+  # config = AutoConfig.from_pretrained(pretrained_weights, num_labels = labels_num)
+  # model = AutoModelForTokenClassification.from_pretrained(pretrained_weights, config)
+  model = AutoModelForTokenClassification.from_pretrained(pretrained_weights, num_labels = labels_num)
+
   # 需要先有模型做斷詞
   train_dataset = Privacy_protection_dataset(train_medical_record, train_labels, tokenizer, labels_type_table, "train")
   val_dataset = Privacy_protection_dataset(val_medical_record, val_labels, tokenizer, labels_type_table, "validation")

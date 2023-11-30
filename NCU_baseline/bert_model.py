@@ -4,7 +4,7 @@ from transformers import AutoTokenizer, AutoModelForTokenClassification
 
 import torch
 from torch import nn
-from transformers import AutoTokenizer, AutoModel
+from transformers import AutoTokenizer, AutoModel, AutoConfig
 # from peft import LoraConfig, TaskType
 
 from peft import LoraConfig, get_peft_model, TaskType
@@ -14,12 +14,12 @@ class myModel(torch.nn.Module):
     def __init__(self):
 
         super(myModel, self).__init__()
-
+        self.num_labels = 22
         self.bert = AutoModel.from_pretrained('bert-base-cased')
         self.droupout = nn.Dropout(p=0.1, inplace=False)
         self.fc = nn.Linear(768, 22)
 
-
+        self.init_weights()
     def forward(self, input_ids, attention_mask):
 
         output = self.bert(input_ids=input_ids, attention_mask=attention_mask, return_dict=True)
@@ -31,12 +31,29 @@ class myModel(torch.nn.Module):
         return out
 
 if __name__ == '__main__':
-    model_name = "bert-base-cased"
+    # model_name = "bert-base-cased"
     labels_num = 22
+    #Method 1 load pretrained weight
+    pretrained_weights = "bert-base-cased"
+    tokenizer = AutoTokenizer.from_pretrained(pretrained_weights)
+    # config 用來修改模型參數的
+    """
+    config = AutoConfig.from_pretrained(pretrained_weights, num_labels = labels_num)
+    print(config)
+    """
+    model = AutoModelForTokenClassification.from_pretrained(pretrained_weights, num_labels = labels_num)
+    print(model)
+    #model.save_pretrained("./model/bert_save_testing")
+
+
+
+
     # token完
     # bert 預訓練模型
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForTokenClassification.from_pretrained(model_name, num_labels = labels_num)
+    # Method 2 Lora
+    """
+    tokenizer = AutoTokenizer.from_pretrained(pretrained_weights)
+    model = AutoModelForTokenClassification.from_pretrained(pretrained_weights, num_labels = labels_num)
     peft_config = LoraConfig(
     task_type=TaskType.TOKEN_CLS, inference_mode=False, r=16, lora_alpha=16, lora_dropout=0.1, bias="all"
     )#target_modules=["key", "query", "value"]
@@ -44,6 +61,7 @@ if __name__ == '__main__':
     model = get_peft_model(model, peft_config)
     print(model.print_trainable_parameters())
     model.save_pretrained("./model/bert_save_testing")
+    """
     # print(type(tokenizer))
     # print(type(model))
     # print(model)
@@ -59,4 +77,4 @@ if __name__ == '__main__':
     # model = get_peft_model(model, lora_config)
 
     
-    # print(model)
+    print(model)
