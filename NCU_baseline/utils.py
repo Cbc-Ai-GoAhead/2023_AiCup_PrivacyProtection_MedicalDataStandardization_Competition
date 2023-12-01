@@ -3,6 +3,89 @@
 #https://www.zhihu.com/question/32745078
 #https://zhuanlan.zhihu.com/p/504204038
 from pprint import pprint as pp
+def z_create_chunks(text,label):
+  t = []
+  l = []
+  p = 0
+  WINDOW_LENGTH = 510
+
+  print("text type ={}".format(type(text)))
+  label_value_to_text =""
+  for id_list in label:
+    label_value_to_text += id_list[3]+" "
+
+  print(label_value_to_text)
+  print("label type ={}".format(type(label)))
+  while p+WINDOW_LENGTH < len(text):
+      t.append(text[p:p+WINDOW_LENGTH])
+      # print("t[-1] = {}" .format(t[-1]))
+      # print(label[0])
+      print(t[-1].find(label))
+      if(t[-1].find(label)==-1):
+          l.append("")
+      else:
+          l.append(label)
+      p += STRIDE_LENGTH
+  t.append(text[p:])
+  if(t[-1].find(label)==-1):
+      l.append("")
+  else:
+      l.append(label)
+  return t,l
+def find_label_value_in_text(t, label_value_to_text):
+  l = []
+  print(t)
+  print(label_value_to_text)
+  for val in label_value_to_text:
+    if(t[-1].find(val)==-1):
+        l.append("")
+        return ""
+    else:#有找到文本
+        #l.append(label)
+        l.append(val) # 先append val 應該是要appendlabel
+        return val, l
+  
+def create_chunks(text,label):
+  t = []
+  l = []
+  p = 0
+  WINDOW_LENGTH = 510
+  STRIDE_LENGTH = 510
+  print("text type ={}".format(type(text)))
+  label_value_to_text = []
+  for id_list in label:
+    label_value_to_text.append(id_list[3])
+
+  print(label_value_to_text)
+  print("label type ={}".format(type(label)))
+  while p+WINDOW_LENGTH < len(text):
+      print("text[p:p+WINDOW_LENGTH] ={}".format(text[p:p+WINDOW_LENGTH]))
+      t.append(text[p:p+WINDOW_LENGTH])
+      # print("t[-1] = {}" .format(t[-1]))
+      # print(label[0])
+      # print(t[-1].find(label))
+      # for val in label_value_to_text:
+      #   if(t[-1].find(val)==-1):
+      #       l.append("")
+      #       break
+      #   else:#有找到文本
+      #       l.append(label)
+      #       break
+      print("-------")
+      print(t)
+      print(label_value_to_text)
+      get_val, o_val_list= find_label_value_in_text(t, label_value_to_text)
+      l.extend(o_val_list)
+      label_value_to_text.remove(get_val)
+      p += STRIDE_LENGTH
+  # t.append(text[p:])
+  # if(t[-1].find(label_value_to_text)==-1):
+  #     l.append("")
+  # else:
+  #     l.append(label)
+  # print("t={}" .format(t))
+  print("l={}" .format(l))
+  return t,l
 def read_text_from_file(file_path):
   medical_record_dict ={}
   for data_path in file_path:
@@ -15,7 +98,7 @@ def read_text_from_file(file_path):
       # file_text = f.read().splitlines()
       # 文本直接整個讀進來
       print("file txt =")
-      pp(file_text)
+      # pp(file_text)
       medical_record_dict[file_id] = file_text
       # print(train_medical_record_dict[file_id] )
     break
@@ -177,6 +260,8 @@ class Long_Privacy_protection_dataset(Dataset):
     else:
         self.start = 0
         raise StopIteration
+  def __iter__(self):
+        return self
   def find_token_ids(self, label_start, label_end, offset_mapping):
     """find the correct labels ids after tokenizer"""
     encodeing_start = float("inf") #max

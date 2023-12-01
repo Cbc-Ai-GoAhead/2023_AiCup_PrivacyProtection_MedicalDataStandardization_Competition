@@ -36,6 +36,9 @@ if __name__ == '__main__':
     train_medical_record_dict = read_text_from_file(train_path)
     
     # print("train_medical_record_dict = {}".format(train_medical_record_dict))
+    fileid = "file9830"
+    print("train_medical_record_dict = {}".format(train_medical_record_dict[fileid]))
+    print("train_medical_record_dict len= {}".format(len(train_medical_record_dict[fileid])))
     # #load validation data from path
     # print("#### load validation data from path")
     # val_medical_record_dict = {} #x
@@ -45,25 +48,31 @@ if __name__ == '__main__':
     #####
     ##  Load Label
     #####
-    # label_path =['../data/First_Phase_Release_Correction/answer.txt', '../data/Second_Phase_Dataset/answer.txt']
-    # train_label_dict, train_date_label_dict = create_label_dict(label_path[0])#
-    # print(train_label_dict)
+    label_path =['../data/First_Phase_Release_Correction/answer.txt', '../data/Second_Phase_Dataset/answer.txt']
+    train_label_dict, train_date_label_dict = create_label_dict(label_path[0])#
+
+    print(train_label_dict[fileid])
+
+    text_chunks, label_chunks = create_chunks(train_medical_record_dict[fileid],train_label_dict[fileid])
+
+    print(text_chunks)
+    print(label_chunks)
     """
     {[['DOCTOR', 18376, 18384, 'I Eifert'], ['TIME', 18412, 18431, '2512-10-20 00:00:00', '2512-10-20T00:00:00'], ['PATIENT', 18443, 18449, 'Bodway']]}
     """
     
-    second_dataset_label_dict, second_date_label_dict = create_label_dict(label_path[1])
-    train_label_dict.update(second_dataset_label_dict)
-    train_date_label_dict.update(second_date_label_dict)
-    val_label_dict, val_date_label_dict = create_label_dict(val_label_path)
+    # second_dataset_label_dict, second_date_label_dict = create_label_dict(label_path[1])
+    # train_label_dict.update(second_dataset_label_dict)
+    # train_date_label_dict.update(second_date_label_dict)
+    # val_label_dict, val_date_label_dict = create_label_dict(val_label_path)
     # print("val_date_label_dict = {}".format(val_date_label_dict))
     #####
     ##  Check the number of data
     #####
     # #chect the number of data
     ##1734  #1734  #560 #560
-    print("num of train medical_data={}, label = {}, val  medical_data={}, label = {}".format(len(list(train_medical_record_dict.keys())),\
-    len(list(train_label_dict.keys())), len(list(val_medical_record_dict.keys())), len(list(val_label_dict.keys()))))
+    # print("num of train medical_data={}, label = {}, val  medical_data={}, label = {}".format(len(list(train_medical_record_dict.keys())),\
+    # len(list(train_label_dict.keys())), len(list(val_medical_record_dict.keys())), len(list(val_label_dict.keys()))))
     
 
     
