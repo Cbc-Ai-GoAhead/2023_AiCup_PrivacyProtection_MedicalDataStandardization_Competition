@@ -53,10 +53,16 @@ if __name__ == '__main__':
 
     print(train_label_dict[fileid])
 
-    text_chunks, label_chunks = create_chunks(train_medical_record_dict[fileid],train_label_dict[fileid])
+    ####
+    ##  Process Text and Label
+    ####
+    processed_medical_record_dict, processed_label_dict={}, {}
+    for fileid in train_medical_record_dict.keys():
+        print("Key = {}" .format(fileid))
+        text_chunks, label_chunks = create_chunks(train_medical_record_dict[fileid],train_label_dict)
 
-    print(text_chunks)
-    print(label_chunks)
+    # print(text_chunks)
+    # print(label_chunks)
     """
     {[['DOCTOR', 18376, 18384, 'I Eifert'], ['TIME', 18412, 18431, '2512-10-20 00:00:00', '2512-10-20T00:00:00'], ['PATIENT', 18443, 18449, 'Bodway']]}
     """

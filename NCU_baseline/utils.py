@@ -32,20 +32,28 @@ def z_create_chunks(text,label):
   else:
       l.append(label)
   return t,l
-def find_label_value_in_text(t, label_value_to_text):
+def find_label_value_in_text(t, label_list_group):#label_value_to_text):
   l = []
-  print(t)
-  print(label_value_to_text)
-  for val in label_value_to_text:
+  # print(t)
+  # print(label_value_to_text)
+  print("------find_label_value_in_text")
+  tmp_val = []
+  processd_label_list_group =[]
+  for id_list in label_list_group:
+    val = id_list[3]
     if(t[-1].find(val)==-1):
-        l.append("")
-        return ""
+        # l.append("")
+        continue
+        # return "", l
     else:#有找到文本
         #l.append(label)
         l.append(val) # 先append val 應該是要appendlabel
-        return val, l
-  
-def create_chunks(text,label):
+        # return val, l
+        tmp_val.append(val)
+        processd_label_list_group.append(id_list)
+  # 如果get val有值就更新 processed_label_dict
+  return tmp_val, processd_label_list_group
+def create_chunks(text,label_dict):
   t = []
   l = []
   p = 0
@@ -53,12 +61,22 @@ def create_chunks(text,label):
   STRIDE_LENGTH = 510
   print("text type ={}".format(type(text)))
   label_value_to_text = []
-  for id_list in label:
-    label_value_to_text.append(id_list[3])
+  fileid = "file9830"
+  print("########")
+  # print(label_dict)
+  label_list_group = label_dict[fileid]
+  for id_list in label_list_group:#[['IDNUM', 8, 18, '65C6598693'],
+    label_value_to_text.append(id_list[3])#['IDNUM', 8, 18, '65C6598693']
 
   print(label_value_to_text)
-  print("label type ={}".format(type(label)))
+  print("label type ={}".format(type(label_value_to_text)))
+  chunk_num = 0
+  processed_medical_record_dict = {}
+  processed_label_dict = {}
+  fileid="file9830"
   while p+WINDOW_LENGTH < len(text):
+      fileid="file9830"
+      processd_label_list_group=[]
       print("text[p:p+WINDOW_LENGTH] ={}".format(text[p:p+WINDOW_LENGTH]))
       t.append(text[p:p+WINDOW_LENGTH])
       # print("t[-1] = {}" .format(t[-1]))
@@ -71,12 +89,34 @@ def create_chunks(text,label):
       #   else:#有找到文本
       #       l.append(label)
       #       break
+      # 判斷如果沒有 label 就不保存
+      
       print("-------")
-      print(t)
+      # print(t)
       print(label_value_to_text)
-      get_val, o_val_list= find_label_value_in_text(t, label_value_to_text)
-      l.extend(o_val_list)
-      label_value_to_text.remove(get_val)
+      get_val_list, processd_label_list_group= find_label_value_in_text(t, label_list_group)#label_value_to_text)
+      print("chunk_num = {}".format(chunk_num))
+      print("get_val_list= {}, o_val_list={}".format(get_val_list, processd_label_list_group))
+      
+      if len(get_val_list)!=0:
+        new_position = chunk_num*WINDOW_LENGTH
+        # new_position = chunk_num*WINDOW_LENGTH
+        # for idx,processed_label_list in enumerate(processd_label_list_group):
+        for idx in range(len(processd_label_list_group)):
+          # update start and end position
+          # processed_label_list[1] = processed_label_list[1]-new_position
+          # processed_label_list[2] = processed_label_list[1]-new_position
+          processd_label_list_group[idx][1] = processd_label_list_group[idx][1] - new_position
+          processd_label_list_group[idx][2] = processd_label_list_group[idx][2] - new_position
+
+        # for processed_label_list in processd_label_list_group:
+        #   processed_label_list[1] = processed_label_list[1]-
+        # l.extend(o_val_list)
+        # label_value_to_text.remove(get_val)
+        fileid+="_"+str(chunk_num)
+        processed_medical_record_dict[fileid]=text[p:p+WINDOW_LENGTH]
+        processed_label_dict[fileid]=processd_label_list_group
+      chunk_num+=1
       p += STRIDE_LENGTH
   # t.append(text[p:])
   # if(t[-1].find(label_value_to_text)==-1):
@@ -84,8 +124,11 @@ def create_chunks(text,label):
   # else:
   #     l.append(label)
   # print("t={}" .format(t))
-  print("l={}" .format(l))
-  return t,l
+  # print("l={}" .format(l))
+
+  print("---Processed Medical Report={}".format(processed_medical_record_dict))
+  print("---Processed label Report={}".format(processed_label_dict))
+  return processed_medical_record_dict,processed_medical_record_dict
 def read_text_from_file(file_path):
   medical_record_dict ={}
   for data_path in file_path:
