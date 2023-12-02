@@ -5,7 +5,7 @@ from utils import *
 import torch
 from torch import nn
 from transformers import AutoTokenizer, AutoModel
-
+from train import *
 first_dataset_doc_path = "../data/First_Phase_Release_Correction/First_Phase_Text_Dataset/"
 second_dataset_doc_path = "../data/Second_Phase_Dataset/Second_Phase_Text_Dataset/"
 label_path = ["../data/First_Phase_Release_Correction/answer.txt", "../data/Second_Phase_Dataset/answer.txt"]
@@ -142,13 +142,13 @@ if __name__ == '__main__':
     train_labels = {sample_id: processed_label_dict[sample_id] for sample_id in train_id_list}
     print("----Prepare Dataset DataLoader")
 
-    print("train_medical_record = {}".format(train_medical_record))
-    print("train_labels = {}".format(train_labels))
-    print("val_id_list===")
+    # print("train_medical_record = {}".format(train_medical_record))
+    # print("train_labels = {}".format(train_labels))
+    # print("val_id_list===")
     val_id_list = list(val_medical_record_dict.keys())
     val_medical_record = {sample_id: val_medical_record_dict[sample_id] for sample_id in val_id_list}
     val_labels = {sample_id: val_label_dict[sample_id] for sample_id in val_id_list}
-    """
+    
 
     print("Display Model------")
     from transformers import AutoTokenizer, AutoModelForTokenClassification
@@ -163,9 +163,10 @@ if __name__ == '__main__':
     train_dataset = Privacy_protection_dataset(train_medical_record, train_labels, tokenizer, labels_type_table, "train")
     val_dataset = Privacy_protection_dataset(val_medical_record, val_labels, tokenizer, labels_type_table, "validation")
 
+    print("---- Dataloader")
     train_dataloader = DataLoader( train_dataset, batch_size = BACH_SIZE, shuffle = True, collate_fn = train_dataset.collate_fn)
     val_dataloader = DataLoader( val_dataset, batch_size = BACH_SIZE, shuffle = False, collate_fn = val_dataset.collate_fn)
-    print("----------------")
+    print("----------------print_dataset_loaderstatus")
 
     print_dataset_loaderstatus(train_dataset, train_dataloader, labels_type_table, BACH_SIZE)
 
@@ -178,6 +179,13 @@ if __name__ == '__main__':
     def post_proxessing(model_result:list):
         #need fix
         return [label.strip() for label in model_result]
-    print_annotated_medical_report(tokenizer, train_dataset, train_medical_record_dict, train_label_dict)
-    """
+    print("----------------print_annotated_medical_report")
+    # print_annotated_medical_report(tokenizer, train_dataset, train_medical_record_dict, train_label_dict)
+
+    #####
+    ##  Training
+    #####
+    print("### Train")
+    finetune_model(train_dataloader, val_dataloader, val_dataset)
+    
     

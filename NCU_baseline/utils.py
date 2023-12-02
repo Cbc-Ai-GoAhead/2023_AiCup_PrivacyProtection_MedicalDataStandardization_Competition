@@ -38,7 +38,7 @@ def z_create_chunks(text,label):
   else:
       l.append(label)
   return t,l
-def find_label_value_in_text(t, label_list_group):#label_value_to_text):
+def find_label_value_in_text(t, label_list_group, new_position):#label_value_to_text):
   l = []
   # print(t)
   # print(label_value_to_text)
@@ -47,16 +47,27 @@ def find_label_value_in_text(t, label_list_group):#label_value_to_text):
   processd_label_list_group =[]
   for id_list in label_list_group:
     val = id_list[3]
+    # 這裡有bug 會尋找到文本的內容
+    # 會另外找到文本後半段不相關的內容
     if(t[-1].find(val)==-1):
         # l.append("")
         continue
         # return "", l
     else:#有找到文本
         #l.append(label)
-        l.append(val) # 先append val 應該是要appendlabel
-        # return val, l
-        tmp_val.append(val)
-        processd_label_list_group.append(id_list)
+        start = id_list[1]- new_position
+        end = id_list[2]- new_position
+        # print("start = {}, end ={}".format(start, end))
+        if start>0:# end >0
+          # print("text = {}".format(t))
+          #每次進來一個文本
+          # print("t[start:end] = {}, val ={}".format(t[0][start:end], val))
+          if t[0][start:end] == val:
+        
+            l.append(val) # 先append val 應該是要appendlabel
+            # return val, l
+            tmp_val.append(val)
+            processd_label_list_group.append(id_list)
   # 如果get val有值就更新 processed_label_dict
   return tmp_val, processd_label_list_group
 def create_chunks(fileid, text,label_list_group):
@@ -85,6 +96,7 @@ def create_chunks(fileid, text,label_list_group):
       processd_label_list_group=[]
       # print("text[p:p+WINDOW_LENGTH] ={}".format(text[p:p+WINDOW_LENGTH]))
       t.append(text[p:p+WINDOW_LENGTH])
+      # print("p = {} p+WINDOW_LENGTH={}".format(p,p+WINDOW_LENGTH))
       # print("t[-1] = {}" .format(t[-1]))
       # print(label[0])
       # print(t[-1].find(label))
@@ -100,12 +112,16 @@ def create_chunks(fileid, text,label_list_group):
       # print("-------")
       # print(t)
       # print(label_value_to_text)
-      get_val_list, processd_label_list_group= find_label_value_in_text(t, label_list_group)#label_value_to_text)
+      new_position = chunk_num*WINDOW_LENGTH
+      # get_val_list, processd_label_list_group= find_label_value_in_text(t, label_list_group,new_position)#label_value_to_text)
+      get_val_list, processd_label_list_group= find_label_value_in_text([text[p:p+WINDOW_LENGTH]], label_list_group,new_position)#label_value_to_text)
       # print("chunk_num = {}".format(chunk_num))
       # print("get_val_list= {}, o_val_list={}".format(get_val_list, processd_label_list_group))
       
       if len(get_val_list)!=0:
-        new_position = chunk_num*WINDOW_LENGTH
+        #這裡有問題 會超出文本範圍
+        
+        
         # new_position = chunk_num*WINDOW_LENGTH
         # for idx,processed_label_list in enumerate(processd_label_list_group):
         for idx in range(len(processd_label_list_group)):
@@ -114,7 +130,20 @@ def create_chunks(fileid, text,label_list_group):
           # processed_label_list[2] = processed_label_list[1]-new_position
           processd_label_list_group[idx][1] = processd_label_list_group[idx][1] - new_position
           processd_label_list_group[idx][2] = processd_label_list_group[idx][2] - new_position
-
+          """
+          if(processd_label_list_group[idx][1]< 0) or (processd_label_list_group[idx][2]<0):
+            print("!!!!")
+            print("p = {} p+WINDOW_LENGTH={}".format(p,p+WINDOW_LENGTH))
+            print("text[p:p+WINDOW_LENGTH]={}".format(text[p:p+WINDOW_LENGTH]))
+            print("fileid ={}".format(fileid))
+            print("p+WINDOW_LENGTH={} < len(text)={}".format(p+WINDOW_LENGTH, len(text)))
+            print("idx = {}".format(idx))
+            print("new_position={}".format(new_position))
+            print(processd_label_list_group[idx][1]+new_position)
+            print(processd_label_list_group[idx][2]+new_position)
+            print(processd_label_list_group[idx][1])
+            print(processd_label_list_group[idx][2])
+          """
         # for processed_label_list in processd_label_list_group:
         #   processed_label_list[1] = processed_label_list[1]-
         # l.extend(o_val_list)
@@ -132,28 +161,54 @@ def create_chunks(fileid, text,label_list_group):
   # print("t={}" .format(t))
   # print("l={}" .format(l))
 
-  print("---Processed Medical Report={}".format(processed_medical_record_dict))
-  print("---Processed label Report={}".format(processed_label_dict))
+  # print("---Processed Medical Report={}".format(processed_medical_record_dict))
+  # print("---Processed label Report={}".format(processed_label_dict))
   return processed_medical_record_dict,processed_label_dict
 def read_text_from_file(file_path):
   medical_record_dict ={}
   for data_path in file_path:
     # print("data_path = {}" .format(data_path))
     file_id = data_path.split("/")[-1].split(".txt")[0]
-    print("file_id = {}" .format(file_id))
+    # print("file_id = {}" .format(file_id))
     
     with open(data_path, "r", encoding="utf-8") as f:
       file_text = f.read()
       # file_text = f.read().splitlines()
       # 文本直接整個讀進來
-      print("file txt =")
+      # print("file txt =")
       # pp(file_text)
       medical_record_dict[file_id] = file_text
       # print(train_medical_record_dict[file_id] )
     # break
 
   return medical_record_dict
-
+def create_label_dict_test(label_path):
+  label_dict = {} #y
+  date_label_dict = {} #DATE TIME DURATION SET
+  with open(label_path, "r", encoding="utf-8") as f:
+    file_text = f.read()
+    file_text = file_text.strip("\ufeff").strip() #train file didn't remove this head
+  for line in file_text.split("\n"):
+    sample = line.split("\t") #(id, label, start, query)
+    # print("sample={}".format(sample))
+    #['1097', '1', '433475.RDC']
+    sample[1] = int(sample[1]) #start, end = (int(start), int(end))
+    sample.append(sample[2]) # 擴增層四個內容
+    sample[3] = int(sample[1])+ len(sample[3])
+    # print("after sample={}".format(sample))
+    # sample[0] is filename
+    # print(sample[0])
+    if sample[0] not in label_dict.keys():
+      #DATE TIME DURATION SET
+      
+      label_dict[sample[0]] = [sample[1:]]
+        
+      
+      # print(label_dict)
+    else:
+      
+      label_dict[sample[0]].append(sample[1:]) # 組成group list
+  return label_dict
 def create_label_dict(label_path):
   label_dict = {} #y
   date_label_dict = {} #DATE TIME DURATION SET
@@ -428,17 +483,39 @@ class Privacy_protection_dataset(Dataset):
         encodeing_end = token_id+1
     return encodeing_start, encodeing_end
 
-  def encode_labels_position(self, batch_lables:list, offset_mapping:list):
+  def encode_labels_position(self, batch_medical_record,batch_id_list, encodings, batch_lables:list, offset_mapping:list):
     """ encode the batch_lables's position"""
     batch_encodeing_labels = []
     for sample_labels, sample_offsets in zip(batch_lables, offset_mapping):#offset_mapping用意是?
       encodeing_labels = []
-      print("sample_labels={}, sample_offsets ={}".format(sample_labels, sample_offsets))
+      # print("sample_labels={}, sample_offsets ={}".format(sample_labels, sample_offsets))
       for label in sample_labels:
         # tokenizer後 id 要重新排?
-        print("label[1]={}, label[2]={}, sample_offsets={}".format(label[1], label[2], sample_offsets))
+        # print("label[1]={}, label[2]={}, sample_offsets={}".format(label[1], label[2], sample_offsets))
+        #['DATE', -3828, -3820] label位置會變成負的
         encodeing_start, encodeing_end = self.find_token_ids(label[1], label[2], sample_offsets)#label 的位置也要做position encoding
-        encodeing_labels.append([label[0], encodeing_start, encodeing_end])
+        
+        # print("encodeing_start={}, encodeing_end={}".format(encodeing_start, encodeing_end))
+        # find token id 會出錯
+        # 所以要做 offsetmapping
+        # print("------")
+        # label 1 label2會變成負數
+        # print("label = {}, label[1]={}, label[2]={}, sample_offsets={}".format(label, label[1], label[2], sample_offsets))
+        # print("encodeing_start={}, encodeing_end={}".format(encodeing_start, encodeing_end))
+        # 會有 inf 造成錯誤
+        # print("offset_mapping[0] = {}".format(offset_mapping[0]))
+        # print("offset_mapping[0][encodeing_start][0] = {}".format(offset_mapping[0][encodeing_start][0]))
+        decode_start_pos = int(offset_mapping[0][encodeing_start][0])
+        decode_end_pos = int(offset_mapping[0][encodeing_end-1][1])
+        # decode_end_pos = int(encodings["offset_mapping"][0][encodeing_end][1])
+        # print(decode_start_pos, decode_end_pos)
+        # print("batch_id_list[0] ={}".format(batch_id_list[0]))
+        # print("batch_medical_record[int(batch_id_list[0])] = {}".format(batch_medical_record))
+        # batch_szie=1只有一個值
+        # print("batch_medical_record[0][decode_start_pos:decode_end_pos]={}".format(batch_medical_record[0][decode_start_pos:decode_end_pos]))
+
+        #encodeing_labels.append([label[0], encodeing_start, encodeing_end])
+        encodeing_labels.append([label[0], decode_start_pos, decode_end_pos])
       batch_encodeing_labels.append(encodeing_labels)
     return batch_encodeing_labels
 
@@ -482,21 +559,21 @@ class Privacy_protection_dataset(Dataset):
     # print("batch_items =")
     # print(batch_items)
     batch_medical_record = [sample[0] for sample in batch_items] #(id, label, start, end, query) or (id, label, start, end, query, time_org, timefix)
-    print("batch_medical_record ={}".format(batch_medical_record))
+    # print("#####batch_medical_record ={}".format(batch_medical_record))
     # sample 0: 第id的文本, sample 1: label, sample 2: start_positioin, sample 3: End_position, sample 4: query
     # sample  0 取出文本 ('\nEpisode No:  62E239483S\n621239.MVH\n\n
     # sample  1 : [['IDNUM', 14, 24], ['MEDICALRECORD', 25, 35]
     batch_labels = [sample[1] for sample in batch_items]
     batch_id_list = [sample[2] for sample in batch_items]
-    print("batch_labels = {} , batch_id_list={}".format(batch_labels, batch_id_list))
+    # print("batch_labels = {} , batch_id_list={}".format(batch_labels, batch_id_list))
     # 文本丟入 encoding進行編碼 進行斷詞
     encodings = self.tokenizer(batch_medical_record, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True") # truncation=True
     # truncation=True 代表有斷詞
-    print("encodings ={}".format(encodings))
+    # print("#####encodings ={}".format(encodings))
     # encode label
     # 丟入 bert
     # 第0句話輸出的token id =0 第1句話 id =1, padding mask =1 不是padding的id都是1
-    batch_labels_position_encoded = self.encode_labels_position(batch_labels, encodings["offset_mapping"])
+    batch_labels_position_encoded = self.encode_labels_position(batch_medical_record,batch_id_list, encodings, batch_labels, encodings["offset_mapping"])
     #print(encodings["offset_mapping"])
     #print(batch_labels_position_encoded) #show the labels after position encoding
     batch_labels_tensor = self.create_labels_tensor(encodings["input_ids"].shape, batch_labels_position_encoded)# 對應到 label id
@@ -558,11 +635,12 @@ def print_dataset_loaderstatus(train_dataset, train_dataloader, labels_type_tabl
         # print("train_x = {} , train_y={}".format(train_x, train_y))
         # print(train_y)
         break
-    print("-----------------")
+    print("-----------------train_dataset")
     # print("DataLoader")
     # print(len(train_dataloader))
     for sample in train_dataloader:
         # batch_medical_record, encodings, batch_labels_tensor, batch_labels
+        print("sample = {}".format(sample))
         x_name,train_x, train_y, _ = sample
         # print("x_name = {},".format(x_name))
         # print("train_x = {}, train_y= {}".format(train_x, train_y))
@@ -622,9 +700,12 @@ def print_annotated_medical_report(tokenizer,train_dataset, train_medical_record
     print("encodeing_start={} encodeing_end={}".format(encodeing_start, encodeing_end))
 
     #get the original text
+    #
     print(tokenizer.decode(encodings["input_ids"][0][encodeing_start:encodeing_end])) #sometime will error
     # 有時候 encode mapping會錯誤
+    print("---Offsetmapping")
     decode_start_pos = int(encodings["offset_mapping"][0][encodeing_start][0])
     decode_end_pos = int(encodings["offset_mapping"][0][encodeing_end-1][1])
+    # decode_end_pos = int(encodings["offset_mapping"][0][encodeing_end][1])
     print(decode_start_pos, decode_end_pos)
     print(train_medical_record_dict[id][decode_start_pos:decode_end_pos])

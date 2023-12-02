@@ -1,3 +1,6 @@
+from utils import *
+import torch
+from torch import nn
 from torch.utils.tensorboard import SummaryWriter
 writer = SummaryWriter()
 
@@ -5,6 +8,7 @@ from tqdm import tqdm
 from torch.optim import AdamW
 from torch.nn import CrossEntropyLoss
 from bert_model import myModel
+
 def evaluate_total_f1(model, val_dataloader, sum_val_F1):
   
   sum_val_F1 = 0
@@ -20,6 +24,7 @@ def evaluate_total_f1(model, val_dataloader, sum_val_F1):
     P, R, F1 = calculate_batch_score(batch_labels, model_predict_tables, batch_x["offset_mapping"], labels_type_table)
     if val_step%50==0:
       print("val_F1", F1)
+    
     val_loss = loss_fct(outputs.transpose(-1, -2), batch_y)
     sum_val_F1 += float(F1)
     #print("val_loss", val_loss)
@@ -29,9 +34,9 @@ def evaluate_total_f1(model, val_dataloader, sum_val_F1):
   # model.save_pretrained(output_dir)
   # output_dir= output_dir+"_token"
   # tokenizer.save_pretrained(output_dir)
-  output_dir = "./model_pre/" + "bert-base-cased"+"_"+str(epoch)+"_"+str(BACH_SIZE)+"_"+str(sum_val_F1/len(val_dataloader))
-  torch.save(model.state_dict(), output_dir+"dict")
-  torch.save(model, output_dir)
+  # output_dir = "./model_pre/" + "bert-base-cased"+"_"+str(epoch)+"_"+str(BACH_SIZE)+"_"+str(sum_val_F1/len(val_dataloader))
+  # torch.save(model.state_dict(), output_dir+"dict")
+  # torch.save(model, output_dir)
   # model.save_model(output_dir)
   # model.save_pretrained(output_dir)
 
@@ -41,7 +46,7 @@ def evaluate_total_f1(model, val_dataloader, sum_val_F1):
     # model.save_pretrained(output_dir)
     # output_dir= output_dir+"_token"
     # tokenizer.save_pretrained(output_dir)
-    torch.save(model.state_dict(), output_dir+"dict")
+    # torch.save(model.state_dict(), output_dir+"dict")
     torch.save(model, output_dir)
     # model.save_model(output_dir)
     # model.save_pretrained(output_dir)
@@ -94,12 +99,12 @@ def decode_model(model, val_dataset):
         # do the postprocessing at here
         # Predict_str 會抓到 \n 換行符號 要再處理
         # 先處理 whitespce
-        predict_str= predict_str.strip()# 去掉左右空白
-        predict_str = delete_whitespace(predict_label_name, predict_str)
+        # predict_str= predict_str.strip()# 去掉左右空白
+        # predict_str = delete_whitespace(predict_label_name, predict_str)
         sample_result_str = (id +'\t'+ predict_label_name +'\t'+ str(start) +'\t'+ str(end) +'\t'+ predict_str + "\n")
         output_string += sample_result_str
     #print(y)# y 有跟原本一樣嗎？
-  exp_path = "./submission"+"_"+str(epoch)+"_"+str(BACH_SIZE)
+  exp_path = "./processed_submission"+"_"+str(epoch)+"_"+str(BACH_SIZE)
   if not os.path.exists(exp_path):
     os.mkdir(exp_path)
   answer_path = exp_path+"/"+"answer.txt"
@@ -156,9 +161,9 @@ def finetune_model(train_dataloader, val_dataloader, val_dataset):
     
 
     model.eval()
-    evaluate_total_f1(model, val_dataloader, base_f1_score, writer)
+    evaluate_total_f1(model, val_dataloader, base_f1_score)#, writer)
     writer.close()
-    decode_model(model, )
+    # decode_model(model, val_dataset)
     
     
     

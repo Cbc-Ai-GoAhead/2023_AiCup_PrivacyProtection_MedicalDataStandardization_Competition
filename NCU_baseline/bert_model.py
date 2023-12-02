@@ -19,7 +19,7 @@ class myModel(torch.nn.Module):
         self.droupout = nn.Dropout(p=0.1, inplace=False)
         self.fc = nn.Linear(768, 22)
 
-        self.init_weights()
+        # self.init_weights()
     def forward(self, input_ids, attention_mask):
 
         output = self.bert(input_ids=input_ids, attention_mask=attention_mask, return_dict=True)
