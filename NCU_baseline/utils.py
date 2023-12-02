@@ -3,6 +3,12 @@
 #https://www.zhihu.com/question/32745078
 #https://zhuanlan.zhihu.com/p/504204038
 from pprint import pprint as pp
+def delete_whitespace(predict_label_name, predict_str):
+  label_type = ['OTHER', 'COUNTRY',  'CITY', 'STATE',  'URL', 'TIME', 'DEPARTMENT',  'DOCTOR', 'ROOM', 'PHONE', 'HOSPITAL', 'ORGANIZATION', 'LOCATION-OTHER', 'STREET', 'PATIENT',  'DURATION']
+  need_stip_label = ['SET', 'DATE','ZIP','AGE','IDNUM','MEDICALRECORD',]
+  if predict_label_name in need_stip_label:
+    predict_str  = predict_str.replace(' ', '')
+  return predict_str
 def z_create_chunks(text,label):
   t = []
   l = []
@@ -36,7 +42,7 @@ def find_label_value_in_text(t, label_list_group):#label_value_to_text):
   l = []
   # print(t)
   # print(label_value_to_text)
-  print("------find_label_value_in_text")
+  # print("------find_label_value_in_text")
   tmp_val = []
   processd_label_list_group =[]
   for id_list in label_list_group:
@@ -53,31 +59,31 @@ def find_label_value_in_text(t, label_list_group):#label_value_to_text):
         processd_label_list_group.append(id_list)
   # 如果get val有值就更新 processed_label_dict
   return tmp_val, processd_label_list_group
-def create_chunks(text,label_dict):
+def create_chunks(fileid, text,label_list_group):
   t = []
   l = []
   p = 0
   WINDOW_LENGTH = 510
   STRIDE_LENGTH = 510
-  print("text type ={}".format(type(text)))
+  # print("text type ={}".format(type(text)))
   label_value_to_text = []
-  fileid = "file9830"
-  print("########")
+  # fileid = "file9830"
+  # print("########")
   # print(label_dict)
-  label_list_group = label_dict[fileid]
+  #label_list_group = label_dict[fileid]
   for id_list in label_list_group:#[['IDNUM', 8, 18, '65C6598693'],
     label_value_to_text.append(id_list[3])#['IDNUM', 8, 18, '65C6598693']
 
-  print(label_value_to_text)
-  print("label type ={}".format(type(label_value_to_text)))
+  # print(label_value_to_text)
+  # print("label type ={}".format(type(label_value_to_text)))
   chunk_num = 0
   processed_medical_record_dict = {}
   processed_label_dict = {}
-  fileid="file9830"
+  # fileid="file9830"
   while p+WINDOW_LENGTH < len(text):
-      fileid="file9830"
+      # fileid="file9830"
       processd_label_list_group=[]
-      print("text[p:p+WINDOW_LENGTH] ={}".format(text[p:p+WINDOW_LENGTH]))
+      # print("text[p:p+WINDOW_LENGTH] ={}".format(text[p:p+WINDOW_LENGTH]))
       t.append(text[p:p+WINDOW_LENGTH])
       # print("t[-1] = {}" .format(t[-1]))
       # print(label[0])
@@ -91,12 +97,12 @@ def create_chunks(text,label_dict):
       #       break
       # 判斷如果沒有 label 就不保存
       
-      print("-------")
+      # print("-------")
       # print(t)
-      print(label_value_to_text)
+      # print(label_value_to_text)
       get_val_list, processd_label_list_group= find_label_value_in_text(t, label_list_group)#label_value_to_text)
-      print("chunk_num = {}".format(chunk_num))
-      print("get_val_list= {}, o_val_list={}".format(get_val_list, processd_label_list_group))
+      # print("chunk_num = {}".format(chunk_num))
+      # print("get_val_list= {}, o_val_list={}".format(get_val_list, processd_label_list_group))
       
       if len(get_val_list)!=0:
         new_position = chunk_num*WINDOW_LENGTH
@@ -128,7 +134,7 @@ def create_chunks(text,label_dict):
 
   print("---Processed Medical Report={}".format(processed_medical_record_dict))
   print("---Processed label Report={}".format(processed_label_dict))
-  return processed_medical_record_dict,processed_medical_record_dict
+  return processed_medical_record_dict,processed_label_dict
 def read_text_from_file(file_path):
   medical_record_dict ={}
   for data_path in file_path:
@@ -144,7 +150,7 @@ def read_text_from_file(file_path):
       # pp(file_text)
       medical_record_dict[file_id] = file_text
       # print(train_medical_record_dict[file_id] )
-    break
+    # break
 
   return medical_record_dict
 
@@ -333,6 +339,7 @@ class Long_Privacy_protection_dataset(Dataset):
     return batch_encodeing_labels
 
   def create_labels_tensor(self, batch_shape:list, batch_labels_position_encoded:list):
+    # 4096用意是？
     if batch_shape[-1]> 4096:
       batch_shape[-1] = 4096
     labels_tensor = torch.zeros(batch_shape)
@@ -426,8 +433,10 @@ class Privacy_protection_dataset(Dataset):
     batch_encodeing_labels = []
     for sample_labels, sample_offsets in zip(batch_lables, offset_mapping):#offset_mapping用意是?
       encodeing_labels = []
+      print("sample_labels={}, sample_offsets ={}".format(sample_labels, sample_offsets))
       for label in sample_labels:
         # tokenizer後 id 要重新排?
+        print("label[1]={}, label[2]={}, sample_offsets={}".format(label[1], label[2], sample_offsets))
         encodeing_start, encodeing_end = self.find_token_ids(label[1], label[2], sample_offsets)#label 的位置也要做position encoding
         encodeing_labels.append([label[0], encodeing_start, encodeing_end])
       batch_encodeing_labels.append(encodeing_labels)
@@ -473,16 +482,17 @@ class Privacy_protection_dataset(Dataset):
     # print("batch_items =")
     # print(batch_items)
     batch_medical_record = [sample[0] for sample in batch_items] #(id, label, start, end, query) or (id, label, start, end, query, time_org, timefix)
+    print("batch_medical_record ={}".format(batch_medical_record))
     # sample 0: 第id的文本, sample 1: label, sample 2: start_positioin, sample 3: End_position, sample 4: query
     # sample  0 取出文本 ('\nEpisode No:  62E239483S\n621239.MVH\n\n
     # sample  1 : [['IDNUM', 14, 24], ['MEDICALRECORD', 25, 35]
     batch_labels = [sample[1] for sample in batch_items]
     batch_id_list = [sample[2] for sample in batch_items]
-
+    print("batch_labels = {} , batch_id_list={}".format(batch_labels, batch_id_list))
     # 文本丟入 encoding進行編碼 進行斷詞
     encodings = self.tokenizer(batch_medical_record, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True") # truncation=True
     # truncation=True 代表有斷詞
-      
+    print("encodings ={}".format(encodings))
     # encode label
     # 丟入 bert
     # 第0句話輸出的token id =0 第1句話 id =1, padding mask =1 不是padding的id都是1
@@ -578,7 +588,7 @@ def print_annotated_medical_report(tokenizer,train_dataset, train_medical_record
     print("--------------------------")
     print("#### Tokenizer")
     #some exist id "10", "11", "12", "file16529"
-    id = "file9830"#"file10996"
+    id = "file10996"#"file9830"
     print(train_medical_record_dict[id])
     pp(train_label_dict[id])
     print("Number of character in medical_record:", len(train_medical_record_dict[id]))
