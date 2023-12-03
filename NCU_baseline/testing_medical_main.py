@@ -175,11 +175,16 @@ if __name__ == '__main__':
   model = AutoModelForTokenClassification.from_pretrained(pretrained_weights, num_labels = labels_num)
 
   # 需要先有模型做斷詞
-  train_dataset = Privacy_protection_dataset(train_medical_record, train_labels, tokenizer, labels_type_table, "train")
-  val_dataset = Privacy_protection_dataset(val_medical_record, val_labels, tokenizer, labels_type_table, "validation")
+  train_dataset = ori_Privacy_protection_dataset(train_medical_record, train_labels, tokenizer, labels_type_table, "train")
+  val_dataset = ori_Privacy_protection_dataset(val_medical_record, val_labels, tokenizer, labels_type_table, "validation")
+
+  test_dataset = ori_Privacy_protection_dataset(val_medical_record, val_labels, tokenizer, labels_type_table, "test")
+
 
   train_dataloader = DataLoader( train_dataset, batch_size = BACH_SIZE, shuffle = True, collate_fn = train_dataset.collate_fn)
   val_dataloader = DataLoader( val_dataset, batch_size = BACH_SIZE, shuffle = False, collate_fn = val_dataset.collate_fn)
+
+  test_dataloader = DataLoader( test_dataset, batch_size = BACH_SIZE, shuffle = False, collate_fn = test_dataset.collate_fn)
   print("----------------")
 
   print_dataset_loaderstatus(train_dataset, train_dataloader, labels_type_table, BACH_SIZE)
@@ -210,8 +215,8 @@ if __name__ == '__main__':
   ##  Training
   #####
   # print("### Train")
-  # finetune_model(train_dataloader, val_dataloader, val_dataset)
-  print_annotated_medical_report(tokenizer, train_dataset, train_medical_record_dict, train_label_dict)
+  finetune_model(train_dataloader, val_dataloader, val_dataset)
+  # print_annotated_medical_report(tokenizer, train_dataset, train_medical_record_dict, train_label_dict)
   
 
   

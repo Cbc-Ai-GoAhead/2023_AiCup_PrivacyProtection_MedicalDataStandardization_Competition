@@ -8,10 +8,23 @@ from tqdm import tqdm
 from torch.optim import AdamW
 from torch.nn import CrossEntropyLoss
 from bert_model import myModel
+def testing_total_f1(model, test_dataloader, sum_val_F1):
+  for batch_x_name, batch_x in test_dataloader:
+    test_step += 1
+    optim.zero_grad()
+    batch_x["input_ids"] = batch_x["input_ids"].to(device)
+    batch_x["attention_mask"] = batch_x["attention_mask"].to(device)
+    # batch_y = batch_y.long().to(device)
+    outputs = model(batch_x["input_ids"], batch_x["attention_mask"])
+    model_predict_tables = torch.argmax(outputs, dim=-1, keepdim=True)
+    model_predict_tables = model_predict_tables.squeeze(-1)
+    # P, R, F1 = calculate_batch_score(batch_labels, model_predict_tables, batch_x["offset_mapping"], labels_type_table)
+    decode_model(model, test_dataset)
 
-def evaluate_total_f1(model, val_dataloader, sum_val_F1):
+def evaluate_total_f1(model, val_dataloader, sum_val_F1, test_dataloader):
   
   sum_val_F1 = 0
+  val_step = 0
   for batch_x_name, batch_x, batch_y, batch_labels in val_dataloader:
     val_step += 1
     optim.zero_grad()
