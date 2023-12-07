@@ -1,4 +1,6 @@
 from pprint import pprint as pp
+#https://www.mim.ai/fine-tuning-bert-model-for-arbitrarily-long-texts-part-1/
+#https://blog.csdn.net/weixin_42223207/article/details/119336324
 def read_text_from_file(file_path):
   medical_record_dict ={}
   for data_path in file_path:
@@ -17,7 +19,62 @@ def read_text_from_file(file_path):
     break
 
   return medical_record_dict
+def read_test_text_from_file(file_path):
+  medical_record_dict ={}
+  for data_path in file_path:
+    # print("data_path = {}" .format(data_path))
+    file_id = data_path.split("/")[-1].split(".txt")[0]
+    # print("file_id = {}" .format(file_id))
+    
+    with open(data_path, "r", encoding="utf-8") as f:
+      file_text = f.read()
+      # file_text = f.read().splitlines()
+      # 文本直接整個讀進來
+      # print("file txt =")
+      # pp(file_text)
+      medical_record_dict[file_id] = file_text
+      # print(train_medical_record_dict[file_id] )
 
+  return medical_record_dict
+def testing_create_label_dict(label_path):
+  label_dict = {} #y
+  date_label_dict = {} #DATE TIME DURATION SET
+  with open(label_path, "r", encoding="utf-8") as f:
+    file_text = f.read()
+    file_text = file_text.strip("\ufeff").strip() #train file didn't remove this head
+  for line in file_text.split("\n"):
+    sample = line.split("\t") #(id, label, start, end, query) or (id, label, start, end, query, time_org, timefix)
+    # print("sample ={}".format(sample))
+    sample[1] = int(sample[1])
+    # sample[2], sample[3] = (int(sample[2]), int(sample[3])) #start, end = (int(start), int(end))
+
+
+    # print(sample)
+    """
+    ['file1436', 'TIME', 3651, 3670, '2761-04-09 00:00:00', '2761-04-09T00:00:00']
+    ['file1436', 'PATIENT', 3682, 3695, 'ELLIS-GEFFERS']
+    ['file14362', 'IDNUM', 8, 18, '86L006749H']
+    """
+    
+    # sample[0] is filename
+    # print(sample[0])
+    if sample[0] not in label_dict.keys():
+      #DATE TIME DURATION SET
+      # if sample[1] == ('DATE' or "TIME" or "DURATIOM" or "SET"):
+      #   date_label_dict[sample[0]] = [sample[1:]]
+      label_dict[sample[0]] = [sample[1:]]
+        
+      
+      # print(label_dict)
+    else:
+      # if sample[1] == ('DATE' or "TIME" or "DURATIOM" or "SET"):
+      #   date_label_dict[sample[0]] = [sample[1:]]
+      label_dict[sample[0]].append(sample[1:]) # 組成group list
+        
+      # 144': [['IDNUM', 13, 23, '77H941695D'], ['MEDICALRECORD', 24, 34, '772941.RZP'],]
+    # print(label_dict)
+  return label_dict#, date_label_dict
+    
 def create_label_dict(label_path):
   label_dict = {} #y
   date_label_dict = {} #DATE TIME DURATION SET
@@ -64,7 +121,28 @@ def extract_date_lable(train_label_dict, train_id_list):
       break
     break
   print("----------extract_date_lable")
-
+def testing_decode_model_result(model_predict_table, offsets_mapping, labels_type_table):
+  model_predict_list = model_predict_table.tolist()
+  print("----------------------------------------------------")
+  print("model_predict_list = {}".format(model_predict_list))
+  id_to_label = {id:label for label, id in labels_type_table.items()}
+  predict_y = []
+  pre_label_id = 0
+  for position_id, label_id in enumerate(model_predict_list):
+    print("position_id={}, label_id={}".format(position_id, label_id))
+    if label_id!=0:
+      if pre_label_id!=label_id:
+        print("offsets_mapping[position_id][0] = {}".format(offsets_mapping[position_id][0]))
+        start = int(offsets_mapping[position_id][0])
+      print("offsets_mapping[position_id][1] = {}".format(offsets_mapping[position_id][1]))
+      end = int(offsets_mapping[position_id][1])
+    if pre_label_id!=label_id and pre_label_id!=0:
+      predict_y.append([id_to_label[pre_label_id], start, end])
+    pre_label_id = label_id
+  if pre_label_id!=0:
+    predict_y.append([id_to_label[pre_label_id], start, end])
+  return predict_y
+    
 def decode_model_result(model_predict_table, offsets_mapping, labels_type_table):
   model_predict_list = model_predict_table.tolist()
   id_to_label = {id:label for label, id in labels_type_table.items()}
