@@ -69,35 +69,38 @@ if __name__ == '__main__':
     # for sample, label in zip(test_medical_record, test_labels):
     output_string = ""
     for i, sample in enumerate(test_medical_record):
-        print("i={}, sample = {}".format(i, sample))
+        # print("i={}, sample = {}".format(i, sample))
         context = test_medical_record[sample]
         # print("test_dict[label] = {}".format(testing_medical_record_dict[sample]))
         # print("test_dict[label] = {}".format(test_dict[label]))
         # test_list= test_dict[label]
         encodings = tokenizer(sample, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True")
-        print("encoding -----")
-        print(encodings)
+        # print("encoding -----")
+        # print(encodings)
         encodings["input_ids"] = encodings["input_ids"].to(device)
         encodings["attention_mask"] = encodings["attention_mask"].to(device)
         outputs = model(encodings["input_ids"], encodings["attention_mask"])
-        print("outputs -----")
-        print(outputs)
+        # print("outputs -----")
+        # print(outputs)
 
         model_predict_table = torch.argmax(outputs.squeeze(), dim=-1)
-        print("model_predict_table -----")
-        print(model_predict_table)
+        # print("model_predict_table -----")
+        # print(model_predict_table)
         model_predict_list = decode_model_result(model_predict_table, encodings["offset_mapping"][0], labels_type_table)
         for predict_label_range in model_predict_list:
             predict_label_name, start, end = predict_label_range
-            print("redict_label_name={}, start={}, end={}".format(predict_label_name, start, end))
+            # print("redict_label_name={}, start={}, end={}".format(predict_label_name, start, end))
             predict_str = test_medical_record[sample][start:end]
-            print("redict_label_name={}".format(predict_str))
+            # print("redict_label_name={}".format(predict_str))
             # do the postprocessing at here
             sample_result_str = (sample +'\t'+ predict_label_name +'\t'+ str(start) +'\t'+ str(end) +'\t'+ predict_str + "\n")
-            print("sample_result_str={}".format(sample_result_str))
+            # print("sample_result_str={}".format(sample_result_str))
             output_string += sample_result_str
-            print("output_string={}".format(output_string))
-        break
+            # print("output_string={}".format(output_string))
+    if not os.path.exists("./inference_testing"):
+        os.mkdir("./inference_testing")
+    with open("./inference_testing/testingset_answer.txt", "w", encoding="utf-8") as f:
+        f.write(output_string)
         # for test in test_list:
         #     print(test)
         #     start, context = test
