@@ -47,3 +47,6 @@ pip install typing-extensions==4.3.0
 model.save_pretrained("./model/bert_save_testing")
 ImportError: cannot import name 'soft_unicode' from 'markupsafe' (/opt/conda/lib/python3.8/site-packages/markupsafe/__init__.py)
 pip install markupsafe==2.0.1
+------
+pytorch >1.10.1 ,GPU driver be too old
+lora's pytorch version is> 1.2.0

@@ -3,167 +3,8 @@
 #https://www.zhihu.com/question/32745078
 #https://zhuanlan.zhihu.com/p/504204038
 from pprint import pprint as pp
-def delete_whitespace(predict_label_name, predict_str):
-  label_type = ['OTHER', 'COUNTRY',  'CITY', 'STATE',  'URL', 'TIME', 'DEPARTMENT',  'DOCTOR', 'ROOM', 'PHONE', 'HOSPITAL', 'ORGANIZATION', 'LOCATION-OTHER', 'STREET', 'PATIENT',  'DURATION']
-  need_stip_label = ['SET', 'DATE','ZIP','AGE','IDNUM','MEDICALRECORD',]
-  if predict_label_name in need_stip_label:
-    predict_str  = predict_str.replace(' ', '')
-  return predict_str
-def z_create_chunks(text,label):
-  t = []
-  l = []
-  p = 0
-  WINDOW_LENGTH = 510
-
-  print("text type ={}".format(type(text)))
-  label_value_to_text =""
-  for id_list in label:
-    label_value_to_text += id_list[3]+" "
-
-  print(label_value_to_text)
-  print("label type ={}".format(type(label)))
-  while p+WINDOW_LENGTH < len(text):
-      t.append(text[p:p+WINDOW_LENGTH])
-      # print("t[-1] = {}" .format(t[-1]))
-      # print(label[0])
-      print(t[-1].find(label))
-      if(t[-1].find(label)==-1):
-          l.append("")
-      else:
-          l.append(label)
-      p += STRIDE_LENGTH
-  t.append(text[p:])
-  if(t[-1].find(label)==-1):
-      l.append("")
-  else:
-      l.append(label)
-  return t,l
-def find_label_value_in_text(t, label_list_group, new_position):#label_value_to_text):
-  l = []
-  # print(t)
-  # print(label_value_to_text)
-  # print("------find_label_value_in_text")
-  tmp_val = []
-  processd_label_list_group =[]
-  for id_list in label_list_group:
-    val = id_list[3]
-    # 這裡有bug 會尋找到文本的內容
-    # 會另外找到文本後半段不相關的內容
-    if(t[-1].find(val)==-1):
-        # l.append("")
-        continue
-        # return "", l
-    else:#有找到文本
-        #l.append(label)
-        start = id_list[1]- new_position
-        end = id_list[2]- new_position
-        # print("start = {}, end ={}".format(start, end))
-        if start>0:# end >0
-          # print("text = {}".format(t))
-          #每次進來一個文本
-          # print("t[start:end] = {}, val ={}".format(t[0][start:end], val))
-          if t[0][start:end] == val:
-        
-            l.append(val) # 先append val 應該是要appendlabel
-            # return val, l
-            tmp_val.append(val)
-            processd_label_list_group.append(id_list)
-  # 如果get val有值就更新 processed_label_dict
-  return tmp_val, processd_label_list_group
-def create_chunks(fileid, text,label_list_group):
-  t = []
-  l = []
-  p = 0
-  WINDOW_LENGTH = 510
-  STRIDE_LENGTH = 510
-  # print("text type ={}".format(type(text)))
-  label_value_to_text = []
-  # fileid = "file9830"
-  # print("########")
-  # print(label_dict)
-  #label_list_group = label_dict[fileid]
-  for id_list in label_list_group:#[['IDNUM', 8, 18, '65C6598693'],
-    label_value_to_text.append(id_list[3])#['IDNUM', 8, 18, '65C6598693']
-
-  # print(label_value_to_text)
-  # print("label type ={}".format(type(label_value_to_text)))
-  chunk_num = 0
-  processed_medical_record_dict = {}
-  processed_label_dict = {}
-  # fileid="file9830"
-  while p+WINDOW_LENGTH < len(text):
-      # fileid="file9830"
-      processd_label_list_group=[]
-      # print("text[p:p+WINDOW_LENGTH] ={}".format(text[p:p+WINDOW_LENGTH]))
-      t.append(text[p:p+WINDOW_LENGTH])
-      # print("p = {} p+WINDOW_LENGTH={}".format(p,p+WINDOW_LENGTH))
-      # print("t[-1] = {}" .format(t[-1]))
-      # print(label[0])
-      # print(t[-1].find(label))
-      # for val in label_value_to_text:
-      #   if(t[-1].find(val)==-1):
-      #       l.append("")
-      #       break
-      #   else:#有找到文本
-      #       l.append(label)
-      #       break
-      # 判斷如果沒有 label 就不保存
-      
-      # print("-------")
-      # print(t)
-      # print(label_value_to_text)
-      new_position = chunk_num*WINDOW_LENGTH
-      # get_val_list, processd_label_list_group= find_label_value_in_text(t, label_list_group,new_position)#label_value_to_text)
-      get_val_list, processd_label_list_group= find_label_value_in_text([text[p:p+WINDOW_LENGTH]], label_list_group,new_position)#label_value_to_text)
-      # print("chunk_num = {}".format(chunk_num))
-      # print("get_val_list= {}, o_val_list={}".format(get_val_list, processd_label_list_group))
-      
-      if len(get_val_list)!=0:
-        #這裡有問題 會超出文本範圍
-        
-        
-        # new_position = chunk_num*WINDOW_LENGTH
-        # for idx,processed_label_list in enumerate(processd_label_list_group):
-        for idx in range(len(processd_label_list_group)):
-          # update start and end position
-          # processed_label_list[1] = processed_label_list[1]-new_position
-          # processed_label_list[2] = processed_label_list[1]-new_position
-          processd_label_list_group[idx][1] = processd_label_list_group[idx][1] - new_position
-          processd_label_list_group[idx][2] = processd_label_list_group[idx][2] - new_position
-          """
-          if(processd_label_list_group[idx][1]< 0) or (processd_label_list_group[idx][2]<0):
-            print("!!!!")
-            print("p = {} p+WINDOW_LENGTH={}".format(p,p+WINDOW_LENGTH))
-            print("text[p:p+WINDOW_LENGTH]={}".format(text[p:p+WINDOW_LENGTH]))
-            print("fileid ={}".format(fileid))
-            print("p+WINDOW_LENGTH={} < len(text)={}".format(p+WINDOW_LENGTH, len(text)))
-            print("idx = {}".format(idx))
-            print("new_position={}".format(new_position))
-            print(processd_label_list_group[idx][1]+new_position)
-            print(processd_label_list_group[idx][2]+new_position)
-            print(processd_label_list_group[idx][1])
-            print(processd_label_list_group[idx][2])
-          """
-        # for processed_label_list in processd_label_list_group:
-        #   processed_label_list[1] = processed_label_list[1]-
-        # l.extend(o_val_list)
-        # label_value_to_text.remove(get_val)
-        fileid+="_"+str(chunk_num)
-        processed_medical_record_dict[fileid]=text[p:p+WINDOW_LENGTH]
-        processed_label_dict[fileid]=processd_label_list_group
-      chunk_num+=1
-      p += STRIDE_LENGTH
-  # t.append(text[p:])
-  # if(t[-1].find(label_value_to_text)==-1):
-  #     l.append("")
-  # else:
-  #     l.append(label)
-  # print("t={}" .format(t))
-  # print("l={}" .format(l))
-
-  # print("---Processed Medical Report={}".format(processed_medical_record_dict))
-  # print("---Processed label Report={}".format(processed_label_dict))
-  return processed_medical_record_dict,processed_label_dict
+#https://www.mim.ai/fine-tuning-bert-model-for-arbitrarily-long-texts-part-1/
+#https://blog.csdn.net/weixin_42223207/article/details/119336324
 def read_text_from_file(file_path):
   medical_record_dict ={}
   for data_path in file_path:
@@ -182,33 +23,64 @@ def read_text_from_file(file_path):
     # break
 
   return medical_record_dict
-def create_label_dict_test(label_path):
+
+def read_test_text_from_file(file_path):
+  medical_record_dict ={}
+  for data_path in file_path:
+    # print("data_path = {}" .format(data_path))
+    file_id = data_path.split("/")[-1].split(".txt")[0]
+    # print("file_id = {}" .format(file_id))
+    
+    with open(data_path, "r", encoding="utf-8") as f:
+      file_text = f.read()
+      # file_text = f.read().splitlines()
+      # 文本直接整個讀進來
+      # print("file txt =")
+      # pp(file_text)
+      medical_record_dict[file_id] = file_text
+      # print(train_medical_record_dict[file_id] )
+
+  return medical_record_dict
+def testing_create_label_dict(label_path):
+
   label_dict = {} #y
   date_label_dict = {} #DATE TIME DURATION SET
   with open(label_path, "r", encoding="utf-8") as f:
     file_text = f.read()
     file_text = file_text.strip("\ufeff").strip() #train file didn't remove this head
   for line in file_text.split("\n"):
-    sample = line.split("\t") #(id, label, start, query)
-    # print("sample={}".format(sample))
-    #['1097', '1', '433475.RDC']
-    sample[1] = int(sample[1]) #start, end = (int(start), int(end))
-    sample.append(sample[2]) # 擴增層四個內容
-    sample[3] = int(sample[1])+ len(sample[3])
-    # print("after sample={}".format(sample))
+    sample = line.split("\t") #(id, label, start, end, query) or (id, label, start, end, query, time_org, timefix)
+    # print("sample ={}".format(sample))
+    sample[1] = int(sample[1])
+    # sample[2], sample[3] = (int(sample[2]), int(sample[3])) #start, end = (int(start), int(end))
+
+
+    # print(sample)
+    """
+    ['file1436', 'TIME', 3651, 3670, '2761-04-09 00:00:00', '2761-04-09T00:00:00']
+    ['file1436', 'PATIENT', 3682, 3695, 'ELLIS-GEFFERS']
+    ['file14362', 'IDNUM', 8, 18, '86L006749H']
+    """
     # sample[0] is filename
     # print(sample[0])
     if sample[0] not in label_dict.keys():
       #DATE TIME DURATION SET
-      
+      # if sample[1] == ('DATE' or "TIME" or "DURATIOM" or "SET"):
+      #   date_label_dict[sample[0]] = [sample[1:]]
+
       label_dict[sample[0]] = [sample[1:]]
         
       
       # print(label_dict)
     else:
-      
+      # if sample[1] == ('DATE' or "TIME" or "DURATIOM" or "SET"):
+      #   date_label_dict[sample[0]] = [sample[1:]]
       label_dict[sample[0]].append(sample[1:]) # 組成group list
-  return label_dict
+        
+      # 144': [['IDNUM', 13, 23, '77H941695D'], ['MEDICALRECORD', 24, 34, '772941.RZP'],]
+    # print(label_dict)
+  return label_dict#, date_label_dict
+    
 def create_label_dict(label_path):
   label_dict = {} #y
   date_label_dict = {} #DATE TIME DURATION SET
@@ -255,7 +127,28 @@ def extract_date_lable(train_label_dict, train_id_list):
       break
     break
   print("----------extract_date_lable")
-
+def testing_decode_model_result(model_predict_table, offsets_mapping, labels_type_table):
+  model_predict_list = model_predict_table.tolist()
+  print("----------------------------------------------------")
+  print("model_predict_list = {}".format(model_predict_list))
+  id_to_label = {id:label for label, id in labels_type_table.items()}
+  predict_y = []
+  pre_label_id = 0
+  for position_id, label_id in enumerate(model_predict_list):
+    print("position_id={}, label_id={}".format(position_id, label_id))
+    if label_id!=0:
+      if pre_label_id!=label_id:
+        print("offsets_mapping[position_id][0] = {}".format(offsets_mapping[position_id][0]))
+        start = int(offsets_mapping[position_id][0])
+      print("offsets_mapping[position_id][1] = {}".format(offsets_mapping[position_id][1]))
+      end = int(offsets_mapping[position_id][1])
+    if pre_label_id!=label_id and pre_label_id!=0:
+      predict_y.append([id_to_label[pre_label_id], start, end])
+    pre_label_id = label_id
+  if pre_label_id!=0:
+    predict_y.append([id_to_label[pre_label_id], start, end])
+  return predict_y
+    
 def decode_model_result(model_predict_table, offsets_mapping, labels_type_table):
   model_predict_list = model_predict_table.tolist()
   id_to_label = {id:label for label, id in labels_type_table.items()}

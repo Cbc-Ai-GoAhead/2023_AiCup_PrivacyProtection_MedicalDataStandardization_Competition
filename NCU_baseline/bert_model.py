@@ -7,7 +7,7 @@ from torch import nn
 from transformers import AutoTokenizer, AutoModel, AutoConfig
 # from peft import LoraConfig, TaskType
 
-from peft import LoraConfig, get_peft_model, TaskType
+# from peft import LoraConfig, get_peft_model, TaskType
 
 class myModel(torch.nn.Module):
 
