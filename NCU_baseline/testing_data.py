@@ -1,7 +1,7 @@
-import os
+import os, random
 from pprint import pprint as pp
 from utils import *
-
+import numpy as np
 import torch
 from torch import nn
 from transformers import AutoTokenizer, AutoModel
@@ -13,6 +13,14 @@ label_path = ["../data/First_Phase_Release_Correction/answer.txt", "../data/Seco
 
 testing_dataset_doc_parh = "../data/test_dataset/opendid_test/"
 testing_label_path = "../data/test_dataset/opendid_test.tsv"
+
+# 設定隨機種子值，以確保輸出是確定的
+seed_val = 42
+random.seed(seed_val)
+np.random.seed(seed_val)
+torch.manual_seed(seed_val)
+torch.cuda.manual_seed_all(seed_val)
+
 if __name__ == '__main__':
     # read_text_from_file()
     testing_dataset_path = [testing_dataset_doc_parh + file_path for file_path in os.listdir(testing_dataset_doc_parh)]
@@ -43,8 +51,10 @@ if __name__ == '__main__':
     labels_num = len(labels_type)
     print("labels_type = {}".format(labels_type))
     # test_dataset = Privacy_protection_dataset(testing_medical_record_dict, test_dict, tokenizer, labels_type_table, "test")
-
-
+    ######
+    ##   Testing Dataset
+    ######
+    testdataset_Privacy_protection_dataset(Dataset):
 
     #model = myModel()
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
@@ -74,15 +84,17 @@ if __name__ == '__main__':
         # print("test_dict[label] = {}".format(testing_medical_record_dict[sample]))
         # print("test_dict[label] = {}".format(test_dict[label]))
         # test_list= test_dict[label]
+        print("context ={}".format(context[:513]))
         encodings = tokenizer(sample, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True")
-        # print("encoding -----")
-        # print(encodings)
+        print("encoding -----")
+        print(encodings)
+        
         encodings["input_ids"] = encodings["input_ids"].to(device)
         encodings["attention_mask"] = encodings["attention_mask"].to(device)
         outputs = model(encodings["input_ids"], encodings["attention_mask"])
-        # print("outputs -----")
-        # print(outputs)
-
+        print("outputs -----")
+        print(outputs)
+        break
         model_predict_table = torch.argmax(outputs.squeeze(), dim=-1)
         # print("model_predict_table -----")
         # print(model_predict_table)
