@@ -9,7 +9,8 @@ import re
 # i_doc_path = "./11_26_submission_9_12/answer.txt"#delet 5939 MR
 # i_doc_path = "./11_26_submission_9_12/answer_time_drop_202311-2710-2634-629846.txt"
 # i_doc_path = "./submission/answer.txt"
-i_doc_path = "./11_26_submission_9_12/submission_8_12/answer_8.txt"
+#i_doc_path = "./11_26_submission_9_12/submission_8_12/answer_8.txt"
+i_doc_path = "./inference_testing/testingset_answer_dataset.txt"
 answer_df = pd.read_csv(i_doc_path, names =["file","class", "start","end","value"], dtype = str, sep="\t")
 
 print(answer_df.head())
@@ -424,7 +425,7 @@ answer_df = answer_df.replace("nan",'')
 # print(answer_df[:50])
 from datetime import datetime
 timestr = datetime.now().strftime('%Y%m-%d%H-%M%S-%f')
-answer_df.to_csv("./11_26_submission_9_12/answer_time_drop_{}.txt".format(timestr), sep = '\t', header=False ,index = None)
+answer_df.to_csv("./inference_testing/answer_time_drop_{}_1212.txt".format(timestr), sep = '\t', header=False ,index = None)
 # date_df = pd.DataFrame(columns = ['bert_date','regular_date'])
 # time_df = pd.DataFrame(columns = ['bert_time','regular_time'])
 # date_df['bert_date'] = ori_date_list

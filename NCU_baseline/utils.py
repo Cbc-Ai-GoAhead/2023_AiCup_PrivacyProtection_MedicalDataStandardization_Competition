@@ -474,10 +474,10 @@ class testdataset_Privacy_protection_dataset(Dataset):
   def __init__(self, medical_record_dict:dict, medical_record_labels:dict, tokenizer, labels_type_table:dict, mode:str):
       self.labels_type_table = labels_type_table
       self.tokenizer = tokenizer
-      if mode == "train" or mode == "validation":
-        self.id_list = list(medical_record_dict.keys())
-        self.x = list(medical_record_dict.values())
-        self.y = [[labels[:3] for labels in medical_record_labels[sample_id]] for sample_id in self.id_list]
+      
+      self.id_list = list(medical_record_dict.keys())
+      self.x = list(medical_record_dict.values())
+      self.y = [[labels[:3] for labels in medical_record_labels[sample_id]] for sample_id in self.id_list]
 
   def __getitem__(self, index):
       return self.x[index], self.y[index], self.id_list[index]
