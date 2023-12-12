@@ -34,17 +34,20 @@ if __name__ == '__main__':
     print("#### load train data from path")
     # 已經把第一和第二train資料讀進來
     train_medical_record_dict = {} #x
-    train_medical_record_dict = read_text_from_file(train_path)
+    #train_medical_record_dict = read_text_from_file(train_path)
+    # 5 reports
+    train_medical_record_dict = read_text_from_file(train_path[:2])
     
-    # print("train_medical_record_dict = {}".format(train_medical_record_dict))
+    print("len train_medical_record_dict = {}".format(len(train_medical_record_dict)))
     fileid = "file9830"
-    print("train_medical_record_dict = {}".format(train_medical_record_dict[fileid]))
-    print("train_medical_record_dict len= {}".format(len(train_medical_record_dict[fileid])))
+    # print("train_medical_record_dict = {}".format(train_medical_record_dict[fileid]))
+    print("train_medical_record_dict fileid len= {}".format(len(train_medical_record_dict[fileid])))
     # #load validation data from path
     # print("#### load validation data from path")
     val_medical_record_dict = {} #x
-    val_medical_record_dict = read_text_from_file(val_path)
-
+    # val_medical_record_dict = read_text_from_file(val_path)
+    val_medical_record_dict = read_text_from_file(val_path[:2])
+    print("len val_medical_record_dict = {}".format(len(val_medical_record_dict)))
 
     #####
     ##  Load Label
@@ -66,10 +69,13 @@ if __name__ == '__main__':
 
     ####
     ##  Process Text and Label
+    ##  create_chunks for sliding window
     ####
+    print("train_medical_record_dict.keys() len = {}".format(len(train_medical_record_dict.keys())))
     processed_medical_record_dict, processed_label_dict={}, {}
     for fileid in train_medical_record_dict.keys():
-        # print("Key = {}" .format(fileid))
+       
+        print("Key = {}" .format(fileid))
         text_chunks_dict, label_chunks_dict = create_chunks(fileid, train_medical_record_dict[fileid],train_label_dict[fileid])
         processed_medical_record_dict.update(text_chunks_dict)
         processed_label_dict.update(label_chunks_dict)
