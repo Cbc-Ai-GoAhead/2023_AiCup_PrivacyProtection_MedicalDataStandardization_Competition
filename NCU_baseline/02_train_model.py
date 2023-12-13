@@ -6,6 +6,7 @@ import torch
 from torch import nn
 from transformers import AutoTokenizer, AutoModel
 from train import *
+from dataset_util import *
 first_dataset_doc_path = "../data/First_Phase_Release_Correction/First_Phase_Text_Dataset/"
 second_dataset_doc_path = "../data/Second_Phase_Dataset/Second_Phase_Text_Dataset/"
 label_path = ["../data/First_Phase_Release_Correction/answer.txt", "../data/Second_Phase_Dataset/answer.txt"]
@@ -39,9 +40,9 @@ if __name__ == '__main__':
     train_medical_record_dict = read_text_from_file(train_path[:2])
     
     print("len train_medical_record_dict = {}".format(len(train_medical_record_dict)))
-    fileid = "file9830"
+    # fileid = "file9830"
     # print("train_medical_record_dict = {}".format(train_medical_record_dict[fileid]))
-    print("train_medical_record_dict fileid len= {}".format(len(train_medical_record_dict[fileid])))
+    # print("train_medical_record_dict fileid len= {}".format(len(train_medical_record_dict[fileid])))
     # #load validation data from path
     # print("#### load validation data from path")
     val_medical_record_dict = {} #x
@@ -55,7 +56,7 @@ if __name__ == '__main__':
     label_path =['../data/First_Phase_Release_Correction/answer.txt', '../data/Second_Phase_Dataset/answer.txt']
     train_label_dict, train_date_label_dict = create_label_dict(label_path[0])#
 
-    print(train_label_dict[fileid])
+    # print(train_label_dict[fileid])
 
     """
     {[['DOCTOR', 18376, 18384, 'I Eifert'], ['TIME', 18412, 18431, '2512-10-20 00:00:00', '2512-10-20T00:00:00'], ['PATIENT', 18443, 18449, 'Bodway']]}
@@ -192,6 +193,6 @@ if __name__ == '__main__':
     ##  Training
     #####
     print("### Train")
-    finetune_model(train_dataloader, val_dataloader, val_dataset)
+    # finetune_model(train_dataloader, val_dataloader, val_dataset)
     
     
