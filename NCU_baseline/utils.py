@@ -5,12 +5,70 @@
 from pprint import pprint as pp
 #https://www.mim.ai/fine-tuning-bert-model-for-arbitrarily-long-texts-part-1/
 #https://blog.csdn.net/weixin_42223207/article/details/119336324
+def testing_find_label_value_in_text(text_list, label_list_group, conetext_start_position,conetext_end_position):#label_value_to_text):
+  l = []
+  # print(t)
+  # print(label_value_to_text)
+  processd_label_list_group =[]
+  tmp_val = []
+  # check label poistion if outlier the remove
+  preserve_label_list_group=[]
+  for id_list in label_list_group:
+    start = id_list[1]
+    end = id_list[1]
+    if (start>=conetext_start_position) and (end<=conetext_end_position):
+      preserve_label_list_group.append(id_list)
+    # if start 
+
+  #file_id start end value
+  for id_list in preserve_label_list_group:
+    value = id_list[3]
+    tmp_val.append(value) # context的內容
+    processd_label_list_group.append(id_list)
+    print("conetext_start_position = {}".format(conetext_start_position))
+    start = id_list[1]- conetext_start_position
+    end = id_list[2]- conetext_start_position
+    print("start = {} end={}".format(start, end))
+
+  for id_list in label_list_group:
+    val = id_list[3]
+    # 這裡有bug 會尋找到文本的內容
+    # 會另外找到文本後半段不相關的內容
+    # print("text type={}".format(type(text_list[-1])))
+    # print("text[-1]={}".format(text_list[-1]))
+    if(text_list[-1].find(val)==-1):
+        # l.append("")
+        continue
+        # return "", l
+    else:#有找到文本
+        #l.append(label)
+        l.append(val) # 先append val 應該是要appendlabel
+        # return val, l
+        tmp_val.append(val) # context的內容
+        processd_label_list_group.append(id_list)
+        start = id_list[1]- conetext_start_position
+        end = id_list[2]- conetext_start_position
+        # print("start = {}, end ={}".format(start, end))
+        if start>0:# end >0
+          # print("text = {}".format(t))
+          #每次進來一個文本
+          # print("t[start:end] = {}, val ={}".format(t[0][start:end], val))
+          if text_list[0][start:end] == val:
+
+            l.append(val) # 先append val 應該是要appendlabel
+            # return val, l
+            tmp_val.append(val)
+            processd_label_list_group.append(id_list)
+  # 如果get val有值就更新 processed_label_dict
+  return tmp_val, processd_label_list_group
+
 def find_label_value_in_text(t, label_list_group, new_position):#label_value_to_text):
   l = []
   # print(t)
   # print(label_value_to_text)
   processd_label_list_group =[]
   tmp_val = []
+  #file_id start end value
   for id_list in label_list_group:
     val = id_list[3]
     # 這裡有bug 會尋找到文本的內容
@@ -65,39 +123,29 @@ def create_chunks(fileid, text,label_list_group):
   # print(t)
   # print(label_value_to_text)
   # get_val_list, processd_label_list_group= find_label_value_in_text(t, label_list_group)#label_value_to_text)
-  while p+WINDOW_LENGTH < len(text):
-    new_position = chunk_num*WINDOW_LENGTH
+  # 計算切幾個文本
+  print("num of segmentation = {}".format(len(text)//WINDOW_LENGTH))
+  #
+  num_segment = len(text)//WINDOW_LENGTH
+  max_length = num_segment*WINDOW_LENGTH
+  remove_over_max_length_label_list_group = []
+  for id_list in label_list_group:# 去掉最後超出範圍的, 或是最後一個要由後往前取
+    start = id_list[1]
+    end = id_list[2]
+    print("max_length ={}, start={}, end={}".format(max_length, start, end))
+    if (int(start) < max_length) and (int(end)< max_length):#前一份文本
+      remove_over_max_length_label_list_group.append(id_list)
+  print("ori lablel len ={}, remove label len = {}".format(label_list_group, remove_over_max_length_label_list_group))
+  while p+WINDOW_LENGTH < len(text):# 會捨棄最後的文本
+    conetext_start_position = chunk_num*WINDOW_LENGTH
+    conetext_end_position = (chunk_num+1)*WINDOW_LENGTH
     # get_val_list, processd_label_list_group= find_label_value_in_text(t, label_list_group,new_position)#label_value_to_text)
-    get_val_list, processd_label_list_group= find_label_value_in_text([text[p:p+WINDOW_LENGTH]], label_list_group,new_position)#label_value_to_text)
+    get_val_list, processd_label_list_group= testing_find_label_value_in_text([text[p:p+WINDOW_LENGTH]], remove_over_max_length_label_list_group,conetext_start_position,conetext_end_position)#label_value_to_text)
     # print("chunk_num = {}".format(chunk_num))
     # print("get_val_list= {}, o_val_list={}".format(get_val_list, processd_label_list_group))
 
     if len(get_val_list)!=0: #去掉沒有類別的值
-      new_position = chunk_num*WINDOW_LENGTH
-      #這裡有問題 會超出文本範圍
-
-
-      # new_position = chunk_num*WINDOW_LENGTH
-      # for idx,processed_label_list in enumerate(processd_label_list_group):
-      for idx in range(len(processd_label_list_group)):
-        # processed_label_list[2] = processed_label_list[1]-new_position
-        processd_label_list_group[idx][1] = processd_label_list_group[idx][1] - new_position
-        processd_label_list_group[idx][2] = processd_label_list_group[idx][2] - new_position
-        print("processd_label_list_group[idx][1] = {} processd_label_list_group[idx][2]={}".format(processd_label_list_group[idx][1], processd_label_list_group[idx][2]))
-        """
-        if(processd_label_list_group[idx][1]< 0) or (processd_label_list_group[idx][2]<0):
-          print("!!!!")
-          print("p = {} p+WINDOW_LENGTH={}".format(p,p+WINDOW_LENGTH))
-          print("text[p:p+WINDOW_LENGTH]={}".format(text[p:p+WINDOW_LENGTH]))
-          print("fileid ={}".format(fileid))
-          print("p+WINDOW_LENGTH={} < len(text)={}".format(p+WINDOW_LENGTH, len(text)))
-          print("idx = {}".format(idx))
-          print("new_position={}".format(new_position))
-          print(processd_label_list_group[idx][1]+new_position)
-          print(processd_label_list_group[idx][2]+new_position)
-          print(processd_label_list_group[idx][1])
-          print(processd_label_list_group[idx][2])
-        """
+      
       fileid+="_"+str(chunk_num)
       processed_medical_record_dict[fileid]=text[p:p+WINDOW_LENGTH]
       processed_label_dict[fileid]=processd_label_list_group
@@ -374,9 +422,9 @@ def print_dataset_loaderstatus(train_dataset, train_dataloader, labels_type_tabl
     # print(len(train_dataloader))
     for sample in train_dataloader:
         # batch_medical_record, encodings, batch_labels_tensor, batch_labels
-        print("sample = {}".format(sample))
+        # print("sample = {}".format(sample))
         x_name,train_x, train_y, _ = sample
-        # print("x_name = {},".format(x_name))
+        print("x_name = {},".format(x_name))
         # print("train_x = {}, train_y= {}".format(train_x, train_y))
         # print("len train_x = {}, train_y= {}".format(len(train_x), len(train_y)))
         print("-----------------")

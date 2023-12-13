@@ -37,7 +37,7 @@ if __name__ == '__main__':
     train_medical_record_dict = {} #x
     #train_medical_record_dict = read_text_from_file(train_path)
     # 5 reports
-    train_medical_record_dict = read_text_from_file(train_path[:2])
+    train_medical_record_dict = read_text_from_file(train_path[:1])
     
     print("len train_medical_record_dict = {}".format(len(train_medical_record_dict)))
     # fileid = "file9830"
@@ -47,7 +47,7 @@ if __name__ == '__main__':
     # print("#### load validation data from path")
     val_medical_record_dict = {} #x
     # val_medical_record_dict = read_text_from_file(val_path)
-    val_medical_record_dict = read_text_from_file(val_path[:2])
+    val_medical_record_dict = read_text_from_file(val_path[:1])
     print("len val_medical_record_dict = {}".format(len(val_medical_record_dict)))
 
     #####
