@@ -21,7 +21,7 @@ class Privacy_protection_dataset(Dataset):
     encodeing_end = 0
     for token_id, token_range in enumerate(offset_mapping):
       token_start, token_end = token_range
-      print("token_start={}, token_end={}" .format(token_start, token_end))
+      # print("token_start={}, token_end={}" .format(token_start, token_end))
       #if token range one side out of label range, still take the token
       if token_start == 0 and token_end == 0: #special tocken
         continue
@@ -49,13 +49,13 @@ class Privacy_protection_dataset(Dataset):
         # 所以要做 offsetmapping
         # print("------")
         # label 1 label2會變成負數
-        print("label = {}, label[1]={}, label[2]={}, sample_offsets={}".format(label, label[1], label[2], sample_offsets))
-        print("encodeing_start={}, encodeing_end={}".format(encodeing_start, encodeing_end))
+        # print("label = {}, label[1]={}, label[2]={}, sample_offsets={}".format(label, label[1], label[2], sample_offsets))
+        # print("encodeing_start={}, encodeing_end={}".format(encodeing_start, encodeing_end))
         # 會有 inf 造成錯誤
         # print("offset_mapping[0] = {}".format(offset_mapping[0]))
           
-        print("offset_mapping[0][encodeing_start][0] = {}".format(offset_mapping[0][encodeing_start][0]))
-        print("offset_mapping[0][encodeing_start][0] = {}".format(offset_mapping[0][encodeing_end-1][1]))
+        # print("offset_mapping[0][encodeing_start][0] = {}".format(offset_mapping[0][encodeing_start][0]))
+        # print("offset_mapping[0][encodeing_start][0] = {}".format(offset_mapping[0][encodeing_end-1][1]))
         decode_start_pos = int(offset_mapping[0][encodeing_start][0])
         decode_end_pos = int(offset_mapping[0][encodeing_end-1][1])
         # decode_end_pos = int(encodings["offset_mapping"][0][encodeing_end][1])
@@ -80,11 +80,12 @@ class Privacy_protection_dataset(Dataset):
     for sample_id in range(batch_shape[0]):# 取出一個batch 內的值
       # print("sample_id = {}".format(sample_id))
       for label in batch_labels_position_encoded[sample_id]:
-        # print("label ={}".format(label))
+        print("label ={}".format(label))
         #label =['MEDICALRECORD', 1, 8]
         #label =['PATIENT', 8, 17]
         label_id = self.labels_type_table[label[0]]
         # print("label_id = {}".format(label_id))
+        print("label_id = {}, label[0]={}".format(label_id, label[0]))
         start = label[1] # 取出Position encode編碼過後的位置
         end = label[2]
         if start >= 4096: continue
@@ -107,7 +108,7 @@ class Privacy_protection_dataset(Dataset):
 
   def collate_fn(self, batch_items:list):
     """the calculation process in dataloader iteration"""
-    # print("batch_items =")
+    print("batch_items ={}".format(batch_items))
     # print(batch_items)
     batch_medical_record = [sample[0] for sample in batch_items] #(id, label, start, end, query) or (id, label, start, end, query, time_org, timefix)
     # print("#####batch_medical_record ={}".format(batch_medical_record))
@@ -116,9 +117,12 @@ class Privacy_protection_dataset(Dataset):
     # sample  1 : [['IDNUM', 14, 24], ['MEDICALRECORD', 25, 35]
     batch_labels = [sample[1] for sample in batch_items]
     batch_id_list = [sample[2] for sample in batch_items]
-    # print("batch_labels = {} , batch_id_list={}".format(batch_labels, batch_id_list))
+    print("batch_labels = {} , batch_id_list={}".format(batch_labels, batch_id_list))
     # 文本丟入 encoding進行編碼 進行斷詞
-    encodings = self.tokenizer(batch_medical_record, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True") # truncation=True
+    print("batch_medical_record = {}" .format(batch_medical_record))
+    print("len batch_medical_record = {}" .format(len(batch_medical_record)))
+    #encodings = self.tokenizer(batch_medical_record, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True") # truncation=True
+    encodings = self.tokenizer(batch_medical_record, padding=True, return_tensors="pt", return_offsets_mapping="True") # truncation=True
     # truncation=True 代表有斷詞
     # print("#####encodings ={}".format(encodings))
     # encode label
@@ -210,7 +214,7 @@ class testdataset_Privacy_protection_dataset(Dataset):
         #label =['MEDICALRECORD', 1, 8]
         #label =['PATIENT', 8, 17]
         label_id = self.labels_type_table[label[0]]
-        # print("label_id = {}".format(label_id))
+        # print("label_id = {}, label[0]={}".format(label_id, label[0]))
         start = label[1] # 取出Position encode編碼過後的位置
         end = label[2]
         if start >= 4096: continue
@@ -242,7 +246,7 @@ class testdataset_Privacy_protection_dataset(Dataset):
     # sample  1 : [['IDNUM', 14, 24], ['MEDICALRECORD', 25, 35]
     batch_labels = [sample[1] for sample in batch_items]
     batch_id_list = [sample[2] for sample in batch_items]
-    # print("batch_labels = {} , batch_id_list={}".format(batch_labels, batch_id_list))
+    print("batch_labels = {} , batch_id_list={}".format(batch_labels, batch_id_list))
     # 文本丟入 encoding進行編碼 進行斷詞
     encodings = self.tokenizer(batch_medical_record, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True") # truncation=True
     # truncation=True 代表有斷詞

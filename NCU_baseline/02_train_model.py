@@ -95,9 +95,24 @@ if __name__ == '__main__':
 
     print("num of train medical_data={}, label = {}, val  medical_data={}, label = {}".format(len(list(processed_medical_record_dict.keys())),\
     len(list(processed_label_dict.keys())), len(list(val_medical_record_dict.keys())), len(list(val_label_dict.keys()))))
+
+    # for labels in train_label_dict.values() :#for label in labels
+    #     print("labels = {}".format(labels))
+
+
     labels_type = list(set( [label[0] for labels in train_label_dict.values() for label in labels] ))
+    print(labels_type)
+    print("type = {}".format(labels_type))
+    
+    print("befort sort = {}" .format(labels_type))
+    labels_type.sort()
+    # other 要在sort 以後加上去 這樣id才會判別回為0 符合
     labels_type = ["OTHER"] + labels_type
+    print("after sort = {}" .format(labels_type))
     labels_num = len(labels_type)
+    # label要自己定義 不然使用 讀取label dict 會有隨機性
+    # {'OTHER': 0, 'ZIP': 1, 'PATIENT': 2, 'STATE': 3, 'DATE': 4, 'HOSPITAL': 5, 'COUNTRY': 6, 'DURATION': 7, 'STREET': 8, 'URL': 9, 'DEPARTMENT': 10, 'MEDICALRECORD': 11, 'ORGANIZATION': 12, 'CITY': 13, 'TIME': 14, 'ROOM': 15, 
+    # 'LOCATION-OTHER': 16, 'DOCTOR': 17, 'IDNUM': 18, 'AGE': 19, 'SET': 20, 'PHONE': 21}
     print("labels_type = {}".format(labels_type))
     print("The number of labels labels_num = {}".format(labels_num))
 
@@ -113,8 +128,9 @@ if __name__ == '__main__':
 
     # print(labels_type)
     # print("The number of labels:", labels_num)
-
+    # label type 會在這邊定義 會因為前面 label順序不同而改變
     labels_type_table = {label_name:id for id, label_name in enumerate(labels_type)}
+    
     # label to id
     # print("labels_type_table = {}".format(labels_type_table))
 
