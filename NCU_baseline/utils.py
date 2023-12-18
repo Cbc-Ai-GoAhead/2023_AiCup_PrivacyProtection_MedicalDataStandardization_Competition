@@ -445,7 +445,7 @@ def calculate_batch_score(batch_labels, model_predict_tables, offset_mappings, l
   F1_score = 2 * (Precision * Recall) / (Precision + Recall)
   return Precision, Recall, F1_score
 
-def print_dataset_loaderstatus(train_dataset, train_dataloader, labels_type_table, BACH_SIZE):
+def print_dataset_loaderstatus(train_dataset, train_dataloader,tokenizer, labels_type_table, BACH_SIZE):
     #####
     ##  Testing DataSet
     #####
@@ -477,7 +477,11 @@ def print_dataset_loaderstatus(train_dataset, train_dataloader, labels_type_tabl
     for i in range(BACH_SIZE):
         print(train_y[i].tolist())
         # 會補成512長度
-        print(train_x)
+        # print(train_x)
+        # print(tokenizer.convert_ids_to_tokens(train_x["input_ids"].cpu().detach().numpy()))
+        print("type = {}".format(train_x["input_ids"]))
+        print("type = {}".format(train_x["input_ids"].tolist()))
+        print(tokenizer.convert_ids_to_tokens(train_x["input_ids"].tolist()[0]))
         print("len train_x ={}".format(len(train_x)))
         print("len train_y[i] ={}".format(len(train_y[i].tolist())))
 def print_annotated_medical_report(tokenizer,train_dataset, train_medical_record_dict, train_label_dict):

@@ -191,7 +191,7 @@ if __name__ == '__main__':
     val_dataloader = DataLoader( val_dataset, batch_size = BACH_SIZE, shuffle = False, collate_fn = val_dataset.collate_fn)
     print("----------------print_dataset_loaderstatus")
 
-    print_dataset_loaderstatus(train_dataset, train_dataloader, labels_type_table, BACH_SIZE)
+    print_dataset_loaderstatus(train_dataset, train_dataloader, tokenizer, labels_type_table, BACH_SIZE)
 
     #####
     ##  Testing Tokenizer  這裡就是在告訴我們 tokenzer完後文本的狀況 
