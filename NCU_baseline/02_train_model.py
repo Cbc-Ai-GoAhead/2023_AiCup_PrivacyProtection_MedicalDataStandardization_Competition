@@ -132,7 +132,7 @@ if __name__ == '__main__':
     labels_type_table = {label_name:id for id, label_name in enumerate(labels_type)}
     
     # label to id
-    # print("labels_type_table = {}".format(labels_type_table))
+    print("labels_type_table = {}".format(labels_type_table))
 
 
     ####
