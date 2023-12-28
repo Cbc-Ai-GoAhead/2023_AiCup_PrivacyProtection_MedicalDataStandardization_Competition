@@ -37,7 +37,8 @@ if __name__ == '__main__':
     train_medical_record_dict = {} #x
     #train_medical_record_dict = read_text_from_file(train_path)
     # 5 reports
-    train_medical_record_dict = read_text_from_file(train_path[:1])
+    #train_medical_record_dict = read_text_from_file(train_path[:1])
+    train_medical_record_dict = read_text_from_file(train_path)
     
     print("len train_medical_record_dict = {}".format(len(train_medical_record_dict)))
     # fileid = "file9830"
@@ -47,7 +48,8 @@ if __name__ == '__main__':
     # print("#### load validation data from path")
     val_medical_record_dict = {} #x
     # val_medical_record_dict = read_text_from_file(val_path)
-    val_medical_record_dict = read_text_from_file(val_path[:1])
+    #val_medical_record_dict = read_text_from_file(val_path[:1])
+    val_medical_record_dict = read_text_from_file(val_path)
     print("len val_medical_record_dict = {}".format(len(val_medical_record_dict)))
 
     #####
@@ -56,6 +58,7 @@ if __name__ == '__main__':
     label_path =['../data/First_Phase_Release_Correction/answer.txt', '../data/Second_Phase_Dataset/answer.txt']
     train_label_dict, train_date_label_dict = create_label_dict(label_path[0])#
 
+
     # print(train_label_dict[fileid])
 
     """
@@ -63,6 +66,7 @@ if __name__ == '__main__':
     """
     
     second_dataset_label_dict, second_date_label_dict = create_label_dict(label_path[1])
+    
     train_label_dict.update(second_dataset_label_dict)
     train_date_label_dict.update(second_date_label_dict)
     val_label_dict, val_date_label_dict = create_label_dict(val_label_path)
@@ -76,7 +80,7 @@ if __name__ == '__main__':
     processed_medical_record_dict, processed_label_dict={}, {}
     for fileid in train_medical_record_dict.keys():
        
-        print("Key = {}" .format(fileid))
+        # print("Key = {}" .format(fileid))
         text_chunks_dict, label_chunks_dict = create_chunks(fileid, train_medical_record_dict[fileid],train_label_dict[fileid])
         processed_medical_record_dict.update(text_chunks_dict)
         processed_label_dict.update(label_chunks_dict)

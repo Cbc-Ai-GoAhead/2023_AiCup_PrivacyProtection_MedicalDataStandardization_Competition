@@ -81,9 +81,19 @@ class Privacy_protection_dataset(Dataset):
           
         # print("offset_mapping[0][encodeing_start][0] = {}".format(offset_mapping[0][encodeing_start][0]))
         # print("offset_mapping[0][encodeing_start][0] = {}".format(offset_mapping[0][encodeing_end-1][1]))
-        decode_start_pos = int(offset_mapping[0][encodeing_start][0])
-        #比如 4 到 11 取道第10個的結尾
-        decode_end_pos = int(offset_mapping[0][encodeing_end-1][1])
+        if encodeing_start=="inf":
+             print("start = {}, end={}".format(encodeing_start, encodeing_end-1))
+             print("label = {}" .format(label))
+             print("label[1]={}, label[2]={}, sample_offsets={}".format(label[1], label[2], sample_offsets))
+        try:
+            decode_start_pos = int(offset_mapping[0][encodeing_start][0])
+            #比如 4 到 11 取道第10個的結尾
+            decode_end_pos = int(offset_mapping[0][encodeing_end-1][1])
+        except:
+            print("start = {}, end={}".format(encodeing_start, encodeing_end-1))
+            print("label = {}" .format(label))
+            print("label[1]={}, label[2]={}, sample_offsets={}".format(label[1], label[2], sample_offsets))
+       
         # decode_end_pos = int(encodings["offset_mapping"][0][encodeing_end][1])
         # print("decode tokenid context start position ={}, end position ={}".format(decode_start_pos, decode_end_pos))
         # print("batch_id_list[0] ={}".format(batch_id_list[0]))

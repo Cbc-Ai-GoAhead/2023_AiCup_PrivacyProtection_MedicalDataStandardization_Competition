@@ -117,6 +117,9 @@ def find_label_value_in_text(t, label_list_group, new_position):#label_value_to_
         start = id_list[1]- new_position
         end = id_list[2]- new_position
         # print("start = {}, end ={}".format(start, end))
+        # 如果label的位置 大於文本的位置就剔除掉
+        if (start > 510) or (end >510):
+            continue
         if start>0:# end >0
           # print("text = {}".format(t))
           #每次進來一個文本
