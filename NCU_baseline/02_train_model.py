@@ -166,6 +166,7 @@ if __name__ == '__main__':
     print("----Prepare Dataset DataLoader")
 
     # print("train_medical_record = {}".format(train_medical_record))
+    # 得到的Label 指有分類的類別 沒有context的內容
     # print("train_labels = {}".format(train_labels))
     # print("val_id_list===")
     val_id_list = list(val_medical_record_dict.keys())
@@ -209,6 +210,6 @@ if __name__ == '__main__':
     ##  Training
     #####
     print("### Train")
-    # finetune_model(train_dataloader, val_dataloader, val_dataset)
+    finetune_model(train_dataloader, val_dataloader, val_dataset)
     
     

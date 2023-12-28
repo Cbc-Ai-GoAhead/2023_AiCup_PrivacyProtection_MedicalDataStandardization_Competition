@@ -12,14 +12,14 @@ def reposition(preserve_label_list_group, conetext_start_position):
     value = id_list[3]
     #tmp_val.append(value) # context的內容
     
-    print("conetext_start_position = {}".format(conetext_start_position))
+    # print("conetext_start_position = {}".format(conetext_start_position))
     start = id_list[1]- conetext_start_position
     end = id_list[2]- conetext_start_position
 
     # reinsert to id_list
     id_list[1] = start
     id_list[2] = end
-    print("start = {} end={}".format(start, end))
+    # print("start = {} end={}".format(start, end))
     processed_preserve_label_list_group.append(id_list)
   return processed_preserve_label_list_group
 def testing_find_label_value_in_text(text_list, label_list_group, conetext_start_position,conetext_end_position):#label_value_to_text):
@@ -149,13 +149,13 @@ def create_chunks(fileid, text,label_list_group):
   # print(label[0])
   # print(t[-1].find(label))
 
-  print("-------")
-  print("text length = {}".format(len(text)))
+  # print("-------")
+  # print("text length = {}".format(len(text)))
   # print(t)
   # print(label_value_to_text)
   # get_val_list, processd_label_list_group= find_label_value_in_text(t, label_list_group)#label_value_to_text)
   # 計算切幾個文本
-  print("num of segmentation = {}".format(len(text)//WINDOW_LENGTH))
+  # print("num of segmentation = {}".format(len(text)//WINDOW_LENGTH))
   #
   num_segment = len(text)//WINDOW_LENGTH
   max_length = num_segment*WINDOW_LENGTH
@@ -163,10 +163,10 @@ def create_chunks(fileid, text,label_list_group):
   for id_list in label_list_group:# 去掉最後超出範圍的, 或是最後一個要由後往前取
     start = id_list[1]
     end = id_list[2]
-    print("max_length ={}, start={}, end={}".format(max_length, start, end))
+    # print("max_length ={}, start={}, end={}".format(max_length, start, end))
     if (int(start) < max_length) and (int(end)< max_length):#前一份文本
       remove_over_max_length_label_list_group.append(id_list)
-  print("ori lablel len ={}, remove label len = {}".format(label_list_group, remove_over_max_length_label_list_group))
+  # print("ori lablel len ={}, remove label len = {}".format(label_list_group, remove_over_max_length_label_list_group))
   while p+WINDOW_LENGTH < len(text):# 會捨棄最後的文本
     conetext_start_position = chunk_num*WINDOW_LENGTH
     conetext_end_position = (chunk_num+1)*WINDOW_LENGTH
@@ -180,12 +180,12 @@ def create_chunks(fileid, text,label_list_group):
     if num_of_label_in_context!=0: #去掉沒有類別的值
       
       fileid+="_"+str(chunk_num)
-      print("fileid = {}".format(fileid))
-      print("p:p+WINDOW_LENGTH] = {} {}".format(p, p+WINDOW_LENGTH))
+      # print("fileid = {}".format(fileid))
+      # print("p:p+WINDOW_LENGTH] = {} {}".format(p, p+WINDOW_LENGTH))
       
       processed_medical_record_dict[fileid]=text[p:p+WINDOW_LENGTH]
-      print("processed_medical_record_dict[fileid] = {}".format(processed_medical_record_dict[fileid]))
-      print("len processed_medical_record_dict = {}" .format(len(processed_medical_record_dict[fileid])))
+      # print("processed_medical_record_dict[fileid] = {}".format(processed_medical_record_dict[fileid]))
+      # print("len processed_medical_record_dict = {}" .format(len(processed_medical_record_dict[fileid])))
       processed_label_dict[fileid]=processd_label_list_group
     chunk_num+=1 # 向後位移
     p += STRIDE_LENGTH
@@ -195,8 +195,8 @@ def create_chunks(fileid, text,label_list_group):
     # print("t={}" .format(t))
     # print("l={}" .format(l))
 
-  print("---Processed Medical Report={}".format(processed_medical_record_dict))
-  print("---Processed label Report={}".format(processed_label_dict))
+  # print("---Processed Medical Report={}".format(processed_medical_record_dict))
+  # print("---Processed label Report={}".format(processed_label_dict))
   # print("---Processed Medical Report={}".format(processed_medical_record_dict))
   # print("---Processed label Report={}".format(processed_label_dict))
   return processed_medical_record_dict,processed_label_dict
@@ -449,10 +449,12 @@ def print_dataset_loaderstatus(train_dataset, train_dataloader,tokenizer, labels
     #####
     ##  Testing DataSet
     #####
+    print("---Training Dataset")
     print(len(train_dataset))
+    
     for sample in train_dataset:
         train_x, train_y,_ = sample
-        # print("train_x = {} , train_y={}".format(train_x, train_y))
+        print("train_x = {} , train_y={}".format(train_x, train_y))
         # print(train_y)
         break
     print("-----------------train_dataset")
@@ -463,6 +465,7 @@ def print_dataset_loaderstatus(train_dataset, train_dataloader,tokenizer, labels
         # print("sample = {}".format(sample))
         x_name,train_x, train_y, y_label = sample
         print("x_name = {},".format(x_name))
+        print("len x_name={}".format(len(x_name[0])))
         print("y_label = {},".format(y_label))
         # print("train_x = {}, train_y= {}".format(train_x, train_y))
         # print("len train_x = {}, train_y= {}".format(len(train_x), len(train_y)))
@@ -481,7 +484,17 @@ def print_dataset_loaderstatus(train_dataset, train_dataloader,tokenizer, labels
         # print(tokenizer.convert_ids_to_tokens(train_x["input_ids"].cpu().detach().numpy()))
         print("type = {}".format(train_x["input_ids"]))
         print("type = {}".format(train_x["input_ids"].tolist()))
-        print(tokenizer.convert_ids_to_tokens(train_x["input_ids"].tolist()[0]))
+        print("---------------------")
+        print(train_x[i])
+        tmp_ids_to_tokens = tokenizer.convert_ids_to_tokens(train_x["input_ids"].tolist()[0])
+        print(tmp_ids_to_tokens)
+        total=""
+        for text in tmp_ids_to_tokens:
+            total+= text+" "
+        print("len tmp_ids_to_tokens={}".format(len(tmp_ids_to_tokens)))
+
+        # print("offset_mapping ={}".format(train_x["offset_mapping"]))
+        print("len total text={}".format(len(total)))
         print("len train_x ={}".format(len(train_x)))
         print("len train_y[i] ={}".format(len(train_y[i].tolist())))
 def print_annotated_medical_report(tokenizer,train_dataset, train_medical_record_dict, train_label_dict):
