@@ -214,6 +214,6 @@ if __name__ == '__main__':
     ##  Training
     #####
     print("### Train")
-    finetune_model(train_dataloader, val_dataloader, val_dataset)
+    finetune_model(train_dataloader, val_dataloader, val_dataset, labels_type_table)
     
     

@@ -21,7 +21,7 @@ def testing_total_f1(model, test_dataloader, sum_val_F1):
     # P, R, F1 = calculate_batch_score(batch_labels, model_predict_tables, batch_x["offset_mapping"], labels_type_table)
     decode_model(model, test_dataset)
 
-def evaluate_total_f1(model, val_dataloader, sum_val_F1, test_dataloader):
+def evaluate_total_f1(model, val_dataloader, optim, device, labels_type_table):#, sum_val_F1, test_dataloader):
   
   sum_val_F1 = 0
   val_step = 0
@@ -43,7 +43,7 @@ def evaluate_total_f1(model, val_dataloader, sum_val_F1, test_dataloader):
     #print("val_loss", val_loss)
     writer.add_scalar('Loss/val', val_loss, val_step)
     writer.add_scalar('F1/val', F1, val_step)
-
+  return sum_val_F1
   # model.save_pretrained(output_dir)
   # output_dir= output_dir+"_token"
   # tokenizer.save_pretrained(output_dir)
@@ -53,17 +53,7 @@ def evaluate_total_f1(model, val_dataloader, sum_val_F1, test_dataloader):
   # model.save_model(output_dir)
   # model.save_pretrained(output_dir)
 
-  if sum_val_F1 > base_f1_score:
-    base_f1_score = sum_val_F1
-    output_dir = "./model_pre/best/" + "best_bert-base-cased"+"_"+str(epoch)+"_"+str(BACH_SIZE)+"_"+str(sum_val_F1/len(val_dataloader))
-    # model.save_pretrained(output_dir)
-    # output_dir= output_dir+"_token"
-    # tokenizer.save_pretrained(output_dir)
-    # torch.save(model.state_dict(), output_dir+"dict")
-    torch.save(model, output_dir)
-    # model.save_model(output_dir)
-    # model.save_pretrained(output_dir)
-    decode_model(model, val_dataset)
+  
 
   # 第2種 inference的方法
   # for i, sample in enumerate(val_dataloader):
@@ -86,7 +76,7 @@ def evaluate_total_f1(model, val_dataloader, sum_val_F1, test_dataloader):
   #   print("Precision: %.2f, Recall %.2f, F1 score: %.2f" %(P, R, F1))
   #   if i==20:
   #     break
-def decode_model(model, val_dataset):
+def decode_model(model, val_dataset, labels_type_table):
   #####
   ### Inference
   #####
@@ -125,7 +115,7 @@ def decode_model(model, val_dataset):
     f.write(output_string)
   
 
-def finetune_model(train_dataloader, val_dataloader, val_dataset):
+def finetune_model(train_dataloader, val_dataloader, val_dataset, labels_type_table):
   ####
   ##  Init model
   ####
@@ -174,7 +164,19 @@ def finetune_model(train_dataloader, val_dataloader, val_dataset):
     
 
     model.eval()
-    evaluate_total_f1(model, val_dataloader, base_f1_score)#, writer)
+    sum_val_F1 = evaluate_total_f1(model, val_dataloader, optim, device, labels_type_table)#, base_f1_score)#, writer)
+    if sum_val_F1 > base_f1_score:
+
+      base_f1_score = sum_val_F1
+      output_dir = "./model_pre/best/" + "best_bert-base-cased"+"_"+str(epoch)+"_"+str(BACH_SIZE)+"_"+str(sum_val_F1/len(val_dataloader))
+      # model.save_pretrained(output_dir)
+      # output_dir= output_dir+"_token"
+      # tokenizer.save_pretrained(output_dir)
+      # torch.save(model.state_dict(), output_dir+"dict")
+      torch.save(model, output_dir)
+      # model.save_model(output_dir)
+      # model.save_pretrained(output_dir)
+      decode_model(model, val_dataset, labels_type_table)
     writer.close()
     # decode_model(model, val_dataset)
     

@@ -20,6 +20,8 @@ def reposition(preserve_label_list_group, conetext_start_position):
     id_list[1] = start
     id_list[2] = end
     # print("start = {} end={}".format(start, end))
+    if start >= 510 or end >=510:# 把超過文本範圍的值去掉
+      continue
     processed_preserve_label_list_group.append(id_list)
   return processed_preserve_label_list_group
 def testing_find_label_value_in_text(text_list, label_list_group, conetext_start_position,conetext_end_position):#label_value_to_text):
@@ -34,6 +36,7 @@ def testing_find_label_value_in_text(text_list, label_list_group, conetext_start
     start = id_list[1]
     end = id_list[1]
     if (start>=conetext_start_position) and (end<=conetext_end_position):
+      #先把在這個範圍的 label 存起來
       preserve_label_list_group.append(id_list)
     # if start 
 
@@ -50,6 +53,7 @@ def testing_find_label_value_in_text(text_list, label_list_group, conetext_start
   #   id_list[1] = start
   #   id_list[2] = end
   #   print("start = {} end={}".format(start, end))
+  # label 的position 重新計算位置
   preserve_label_list_group = reposition(preserve_label_list_group, conetext_start_position)
   #如果文本 只有 other的類別要去除
   #先用label 的值來找context有沒有符合
@@ -60,7 +64,13 @@ def testing_find_label_value_in_text(text_list, label_list_group, conetext_start
       continue
     else:
       num_of_label_in_context+=1
+  # 作到這裡就回傳
   return num_of_label_in_context, preserve_label_list_group
+
+
+
+
+
   for id_list in label_list_group:
     val = id_list[3]
     # 這裡有bug 會尋找到文本的內容
@@ -76,7 +86,9 @@ def testing_find_label_value_in_text(text_list, label_list_group, conetext_start
         l.append(val) # 先append val 應該是要appendlabel
         # return val, l
         tmp_val.append(val) # context的內容
-        processd_label_list_group.append(id_list)
+        # 要先對 label position 處理
+        # processd_label_list_group.append(id_list)
+
         start = id_list[1]- conetext_start_position
         end = id_list[2]- conetext_start_position
         # print("start = {}, end ={}".format(start, end))
@@ -118,7 +130,7 @@ def find_label_value_in_text(t, label_list_group, new_position):#label_value_to_
         end = id_list[2]- new_position
         # print("start = {}, end ={}".format(start, end))
         # 如果label的位置 大於文本的位置就剔除掉
-        if (start > 510) or (end >510):
+        if (start >=510) or (end >510):
             continue
         if start>0:# end >0
           # print("text = {}".format(t))
