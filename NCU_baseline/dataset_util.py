@@ -161,8 +161,9 @@ class Privacy_protection_dataset(Dataset):
     # 文本丟入 encoding進行編碼 進行斷詞
     # print("batch_medical_record = {}" .format(batch_medical_record))
     # print("len batch_medical_record = {}" .format(len(batch_medical_record)))
-    #encodings = self.tokenizer(batch_medical_record, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True") # truncation=True
-    encodings = self.tokenizer(batch_medical_record, padding=True, return_tensors="pt", return_offsets_mapping="True") # truncation=True
+    encodings = self.tokenizer(batch_medical_record, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True") # truncation=True
+    # 這邊有把truncation　去掉
+    # encodings = self.tokenizer(batch_medical_record, padding=True, return_tensors="pt", return_offsets_mapping="True") # truncation=True
     # truncation=True 代表有斷詞
     # print("#####encodings ={}".format(encodings))
     # encode label

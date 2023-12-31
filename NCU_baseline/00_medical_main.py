@@ -1,7 +1,7 @@
 import os
 from pprint import pprint as pp
 from utils import *
-
+from dataset_util import *
 import torch
 from torch import nn
 from transformers import AutoTokenizer, AutoModel, AutoConfig
@@ -46,13 +46,13 @@ if __name__ == '__main__':
   #load train data from path
   print("#### load train data from path")
   train_medical_record_dict = {} #x
-  train_medical_record_dict = read_text_from_file(train_path)
+  train_medical_record_dict = read_text_from_file(train_path[:1])
 
   # print("train_medical_record_dict = {}".format(train_medical_record_dict))
   # #load validation data from path
   print("#### load validation data from path")
   val_medical_record_dict = {} #x
-  val_medical_record_dict = read_text_from_file(val_path)
+  val_medical_record_dict = read_text_from_file(val_path[:1])
 
 
   #####
@@ -112,7 +112,12 @@ if __name__ == '__main__':
 
   # 原本只有21 個類別
   # 加入 OTHER 總共有 22個類別 去掉 #DATE TIME DURATION SET => 22-4=18
+
+  print("befort sort = {}" .format(labels_type))
+  labels_type.sort()
+  # other 要在sort 以後加上去 這樣id才會判別回為0 符合
   labels_type = ["OTHER"] + labels_type #add special token [other] in label list
+  print("after sort = {}" .format(labels_type))
   labels_num = len(labels_type)
   print("labels_type = {}".format(labels_type))
   print("The number of labels labels_num = {}".format(labels_num))
@@ -179,8 +184,8 @@ if __name__ == '__main__':
   # model = AutoModelForTokenClassification.from_pretrained(pretrained_weights, config)
   model = AutoModelForTokenClassification.from_pretrained(pretrained_weights, num_labels = labels_num)
   # 需要先有模型做斷詞
-  train_dataset = Privacy_protection_dataset(train_medical_record, train_labels, tokenizer, labels_type_table, "train")
-  val_dataset = Privacy_protection_dataset(val_medical_record, val_labels, tokenizer, labels_type_table, "validation")
+  train_dataset = ori_Privacy_protection_dataset(train_medical_record, train_labels, tokenizer, labels_type_table, "train")
+  val_dataset = ori_Privacy_protection_dataset(val_medical_record, val_labels, tokenizer, labels_type_table, "validation")
 
   train_dataloader = DataLoader( train_dataset, batch_size = BACH_SIZE, shuffle = True, collate_fn = train_dataset.collate_fn)
   val_dataloader = DataLoader( val_dataset, batch_size = BACH_SIZE, shuffle = False, collate_fn = val_dataset.collate_fn)
@@ -221,6 +226,7 @@ if __name__ == '__main__':
   ##  Testing Tokenizer  這裡就是在告訴我們 tokenzer完後文本的狀況 
   ## 所以助教給我們程式碼 已經是有修改長度到512 並且文本和label的id有重新修改過
   #####
+  """
   print("--------------------------")
   print("#### Tokenizer")
   #some exist id "10", "11", "12", "file16529"
@@ -256,7 +262,7 @@ if __name__ == '__main__':
   decode_end_pos = int(encodings["offset_mapping"][0][encodeing_end-1][1])
   print(decode_start_pos, decode_end_pos)
   print(train_medical_record_dict[id][decode_start_pos:decode_end_pos])
-
+  """
   def post_proxessing(model_result:list):
     #need fix
     return [label.strip() for label in model_result]
@@ -281,7 +287,7 @@ if __name__ == '__main__':
   # !rm -rf ./logs/
 
   from torch.utils.tensorboard import SummaryWriter
-  writer = SummaryWriter()
+  writer = SummaryWriter(comment='ncu_sortlabel')
 
   from tqdm import tqdm
   from torch.optim import AdamW
@@ -289,9 +295,9 @@ if __name__ == '__main__':
   from bert_model import myModel
 
   model = myModel()
-  print(model)
+  # print(model)
 
-  BACH_SIZE = 12#1
+  BACH_SIZE = 1#1
   #TRAIN_RATIO = 0.9
   LEARNING_RATE = 1e-4
   EPOCH = 1
@@ -354,6 +360,10 @@ if __name__ == '__main__':
     for batch_x_name, batch_x, batch_y, batch_labels in train_dataloader:
       train_step += 1
       optim.zero_grad()
+      print("batch_x = {}".format(batch_x))
+      print("batch_y = {}".format(batch_y))
+      print("len batch_x[input_ids] = {}" .format(len(batch_x["input_ids"][0])))
+
       batch_x["input_ids"] = batch_x["input_ids"].to(device)
       batch_x["attention_mask"] = batch_x["attention_mask"].to(device)
       batch_y = batch_y.long().to(device)
@@ -373,6 +383,10 @@ if __name__ == '__main__':
     for batch_x_name, batch_x, batch_y, batch_labels in val_dataloader:
       val_step += 1
       optim.zero_grad()
+      # print(batch_x["input_ids"])
+      # print(batch_x["attention_mask"])
+      # print(batch_y.long())
+
       batch_x["input_ids"] = batch_x["input_ids"].to(device)
       batch_x["attention_mask"] = batch_x["attention_mask"].to(device)
       batch_y = batch_y.long().to(device)
@@ -391,19 +405,19 @@ if __name__ == '__main__':
     # model.save_pretrained(output_dir)
     # output_dir= output_dir+"_token"
     # tokenizer.save_pretrained(output_dir)
-    output_dir = "./model_pre/" + "bert-base-cased"+"_"+str(epoch)+"_"+str(BACH_SIZE)+"_"+str(sum_val_F1/len(val_dataloader))
-    torch.save(model.state_dict(), output_dir+"dict")
-    torch.save(model, output_dir)
+    output_dir = "./model_ncu_baseline/" + "bert-base-cased"+"_"+str(epoch)+"_"+str(BACH_SIZE)+"_"+str(sum_val_F1/len(val_dataloader))
+    # torch.save(model.state_dict(), output_dir+"dict")
+    # torch.save(model, output_dir)
     # model.save_model(output_dir)
     # model.save_pretrained(output_dir)
     
     if sum_val_F1 > base_f1_score:
       base_f1_score = sum_val_F1
-      output_dir = "./model_pre/best/" + "best_bert-base-cased"+"_"+str(epoch)+"_"+str(BACH_SIZE)+"_"+str(sum_val_F1/len(val_dataloader))
+      output_dir = "./model_ncu_baseline/" + "best_bert-base-cased"+"_"+str(epoch)+"_"+str(BACH_SIZE)+"_"+str(sum_val_F1/len(val_dataloader))
       # model.save_pretrained(output_dir)
       # output_dir= output_dir+"_token"
       # tokenizer.save_pretrained(output_dir)
-      torch.save(model.state_dict(), output_dir+"dict")
+      # torch.save(model.state_dict(), output_dir+"dict")
       torch.save(model, output_dir)
       # model.save_model(output_dir)
       # model.save_pretrained(output_dir)
@@ -449,18 +463,21 @@ if __name__ == '__main__':
       outputs = model(encodings["input_ids"], encodings["attention_mask"])
       #output = softmax(outputs.logits)
       model_predict_table = torch.argmax(outputs.squeeze(), dim=-1)
-      #print(model_predict_table)
+      # print(model_predict_table)
       model_predict_list = decode_model_result(model_predict_table, encodings["offset_mapping"][0], labels_type_table)
-      #print(model_predict_list)
+      # print(model_predict_list)
+      # sample_result_str = ""
       for predict_label_range in model_predict_list:
           predict_label_name, start, end = predict_label_range
           predict_str = val_medical_record_dict[id][start:end]
+          print("predict_str = {}".format(predict_str))
           # do the postprocessing at here
           # Predict_str 會抓到 \n 換行符號 要再處理
           sample_result_str = (id +'\t'+ predict_label_name +'\t'+ str(start) +'\t'+ str(end) +'\t'+ predict_str + "\n")
           output_string += sample_result_str
       #print(y)
-  exp_path = "./submission"+"_"+str(epoch)+"_"+str(BACH_SIZE)
+  # print("output_string = {}".format(output_string))
+  exp_path = "./submission_ncu_baseline"+"_"+str(epoch)+"_"+str(BACH_SIZE)
   if not os.path.exists(exp_path):
       os.mkdir(exp_path)
   answer_path = exp_path+"/"+"answer.txt"

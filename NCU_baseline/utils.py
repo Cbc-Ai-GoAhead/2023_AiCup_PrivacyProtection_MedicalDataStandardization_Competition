@@ -5,6 +5,11 @@
 from pprint import pprint as pp
 #https://www.mim.ai/fine-tuning-bert-model-for-arbitrarily-long-texts-part-1/
 #https://blog.csdn.net/weixin_42223207/article/details/119336324
+
+# WINDOW_LENGTH = 510
+# STRIDE_LENGTH = 510
+WINDOW_LENGTH = 1785 #1428 會差 512 一點點還是多一點直接截斷
+STRIDE_LENGTH = 510
 def reposition(preserve_label_list_group, conetext_start_position):
   #file_id start end value
   processed_preserve_label_list_group = []
@@ -20,7 +25,7 @@ def reposition(preserve_label_list_group, conetext_start_position):
     id_list[1] = start
     id_list[2] = end
     # print("start = {} end={}".format(start, end))
-    if start >= 510 or end >=510:# 把超過文本範圍的值去掉
+    if start >= WINDOW_LENGTH or end >=WINDOW_LENGTH:# 把超過文本範圍的值去掉
       continue
     processed_preserve_label_list_group.append(id_list)
   return processed_preserve_label_list_group
@@ -146,8 +151,7 @@ def find_label_value_in_text(t, label_list_group, new_position):#label_value_to_
   return tmp_val, processd_label_list_group
 
 def create_chunks(fileid, text,label_list_group):
-  WINDOW_LENGTH = 510
-  STRIDE_LENGTH = 510
+  
   chunk_num = 0
   processd_label_list_group=[]
 
@@ -209,7 +213,12 @@ def create_chunks(fileid, text,label_list_group):
       # l.extend(o_val_list)
     # print("t={}" .format(t))
     # print("l={}" .format(l))
-
+  # 最後會有超出文本範圍的內容
+  #while p+WINDOW_LENGTH < len(text):
+  # 由後往前加
+  # conetext_start_position = len(text)-WINDOW_LENGTH
+  # conetext_end_position = len(text)
+  
   # print("---Processed Medical Report={}".format(processed_medical_record_dict))
   # print("---Processed label Report={}".format(processed_label_dict))
   # print("---Processed Medical Report={}".format(processed_medical_record_dict))

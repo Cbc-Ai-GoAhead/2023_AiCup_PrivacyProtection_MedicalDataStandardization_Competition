@@ -9,6 +9,7 @@ from torch.optim import AdamW
 from torch.nn import CrossEntropyLoss
 from bert_model import myModel
 from utils import decode_model_result, calculate_batch_score
+from dataset_util import *
 label_path = ["../data/First_Phase_Release_Correction/answer.txt", "../data/Second_Phase_Dataset/answer.txt"]
 
 testing_dataset_doc_parh = "../data/test_dataset/opendid_test/"
@@ -46,10 +47,14 @@ if __name__ == '__main__':
     ## 設定label 種類
     #####
     labels_type = list(set( [label[0] for labels in train_label_dict.values() for label in labels] ))
-    labels_type_table = {label_name:id for id, label_name in enumerate(labels_type)}
+    print("befort sort = {}" .format(labels_type))
+    labels_type.sort()
     labels_type = ["OTHER"] + labels_type #add special token [other] in label list
     labels_num = len(labels_type)
     print("labels_type = {}".format(labels_type))
+
+    labels_type_table = {label_name:id for id, label_name in enumerate(labels_type)}
+    
     # test_dataset = Privacy_protection_dataset(testing_medical_record_dict, test_dict, tokenizer, labels_type_table, "test")
     ######
     ##   Testing Dataset
@@ -59,7 +64,7 @@ if __name__ == '__main__':
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
      # Put model on device
     model_PATH = "./model/bert-base-cased_9_12_0.5539107501245775dict"
-    model_path = "./model/bert-base-cased_9_12_0.5983084987356402"#bert-base-cased_9_12_0.5983084987356402"
+    model_path = "./model_ncu_baseline/best_bert-base-cased_3_12_0.545014035385616"#bert-base-cased_9_12_0.5983084987356402"
     #model.load_state_dict(torch.load(model_PATH))#, map_location=torch.device('cpu')))
     model = torch.load(model_path)
     model = model.to(device)
@@ -121,7 +126,7 @@ if __name__ == '__main__':
             # print("output_string={}".format(output_string))
     if not os.path.exists("./inference_testing"):
         os.mkdir("./inference_testing")
-    with open("./inference_testing/testingset_answer_dataset.txt", "w", encoding="utf-8") as f:
+    with open("./inference_testing/testingset_answer_dataset_3_12_0.54.txt", "w", encoding="utf-8") as f:
         f.write(output_string)
 
 

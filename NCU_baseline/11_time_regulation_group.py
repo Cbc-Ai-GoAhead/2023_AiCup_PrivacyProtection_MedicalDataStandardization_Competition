@@ -5,14 +5,19 @@ from dateutil.parser import *
 from datetime import *
 import pandas as pd
 import re
+import csv
 # i_doc_path = "./submission/answer_drop_n.txt"
 # i_doc_path = "./11_26_submission_9_12/answer.txt"#delet 5939 MR
 # i_doc_path = "./11_26_submission_9_12/answer_time_drop_202311-2710-2634-629846.txt"
 # i_doc_path = "./submission/answer.txt"
 #i_doc_path = "./11_26_submission_9_12/submission_8_12/answer_8.txt"
-i_doc_path = "./inference_testing/testingset_answer_dataset.txt"
-answer_df = pd.read_csv(i_doc_path, names =["file","class", "start","end","value"], dtype = str, sep="\t")
+#i_doc_path = "./inference_testing/testingset_answer_dataset_3_12_0.54.txt"
+i_doc_path = "./inference_testing/testingset_answer_dataset_3_12_0.54_2.txt"
+# i_doc_path = "./inference_testing/answer.txt"
+answer_df = pd.read_csv(i_doc_path, names =["file","class", "start","end","value"], dtype = str, sep="\t", quoting=csv.QUOTE_NONE)
 
+# for chunk in pd.read_csv(i_doc_path, names =["file","class", "start","end","value"], dtype = str, sep="\t", chunksize=20, quoting=csv.QUOTE_NONE):
+#     print(chunk)
 print(answer_df.head())
 #因為要新增第六個欄位 沒有的就給Nan
 
@@ -341,7 +346,7 @@ for row in range(len(answer_df)):
                 except Exception as e:
                     print("error = {}".format(e))
                     print("Exception time value = {}".format(time_value))
-                    answer_df.at[row, 'regulation_time'] = time_value
+                    answer_df.at[row, 'regulation_time'] = time_value #直接給原本的值
                     # time_drop_row.append(row)
 
             # #第二個部分 正規化
@@ -373,17 +378,23 @@ for row in range(len(answer_df)):
                 regular_duration_value="P"+split_value_list[0]+"W"
             elif split_value_list[1] in ["day", "days"] :
                 regular_duration_value="P"+split_value_list[0]+"D"
-
+            print("EXXXXXX!!")
             # month months
             # week weeks
             # day days
 
             answer_df.at[row, 'regulation_time'] = regular_duration_value
-            iso_86_duration_list.append(iso_86_time)
+            # print("EXXXXXX!! 384")
+            # iso_86_duration_list.append(iso_86_time)
+            # print("EXXXXXX!! 386")
             # break
         except:
             # answer_df.at[row, 'value'] = iso_86_time
             iso_86_duration_list.append(duration_value)
+            duration_value = answer_df.at[row, 'value']
+            split_value_list=duration_value.split(" ")
+            print("duration_value = {}".format(duration_value))
+            print("split_value_list = {}".format(split_value_list))
             print("Exception duration value = {}".format(duration_value))
             answer_df.at[row, 'regulation_time'] = duration_value
     elif value_of_class == 'SET' :
@@ -425,7 +436,7 @@ answer_df = answer_df.replace("nan",'')
 # print(answer_df[:50])
 from datetime import datetime
 timestr = datetime.now().strftime('%Y%m-%d%H-%M%S-%f')
-answer_df.to_csv("./inference_testing/answer_time_drop_{}_1212.txt".format(timestr), sep = '\t', header=False ,index = None)
+answer_df.to_csv("./inference_testing/answer_time_drop_{}_1231_2.txt".format(timestr), sep = '\t', header=False ,index = None)
 # date_df = pd.DataFrame(columns = ['bert_date','regular_date'])
 # time_df = pd.DataFrame(columns = ['bert_time','regular_time'])
 # date_df['bert_date'] = ori_date_list

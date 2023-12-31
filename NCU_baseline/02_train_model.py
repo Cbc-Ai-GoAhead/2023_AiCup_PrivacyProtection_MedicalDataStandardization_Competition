@@ -35,10 +35,10 @@ if __name__ == '__main__':
     print("#### load train data from path")
     # 已經把第一和第二train資料讀進來
     train_medical_record_dict = {} #x
-    #train_medical_record_dict = read_text_from_file(train_path)
+    # train_medical_record_dict = read_text_from_file(train_path)
     # 5 reports
-    #train_medical_record_dict = read_text_from_file(train_path[:1])
-    train_medical_record_dict = read_text_from_file(train_path)
+    train_medical_record_dict = read_text_from_file(train_path[:1])
+    # train_medical_record_dict = read_text_from_file(train_path)
     
     print("len train_medical_record_dict = {}".format(len(train_medical_record_dict)))
     # fileid = "file9830"
@@ -48,8 +48,8 @@ if __name__ == '__main__':
     # print("#### load validation data from path")
     val_medical_record_dict = {} #x
     # val_medical_record_dict = read_text_from_file(val_path)
-    #val_medical_record_dict = read_text_from_file(val_path[:1])
-    val_medical_record_dict = read_text_from_file(val_path)
+    val_medical_record_dict = read_text_from_file(val_path[:1])
+    # val_medical_record_dict = read_text_from_file(val_path)
     print("len val_medical_record_dict = {}".format(len(val_medical_record_dict)))
 
     #####
@@ -85,6 +85,16 @@ if __name__ == '__main__':
         processed_medical_record_dict.update(text_chunks_dict)
         processed_label_dict.update(label_chunks_dict)
     # val data 有需要做 Process 去掉沒用的label嗎
+
+    # Val data 也需要切割成510 只是不曉得要不要去掉沒用 label 先暫定測試一次
+    processed_val_medical_record_dict, processed_val_label_dict={}, {}
+    for fileid in val_medical_record_dict.keys():
+       
+        # print("Key = {}" .format(fileid))
+        text_chunks_dict, label_chunks_dict = create_chunks(fileid, val_medical_record_dict[fileid],val_label_dict[fileid])
+        processed_val_medical_record_dict.update(text_chunks_dict)
+        processed_val_label_dict.update(label_chunks_dict)
+
     
     # print(text_chunks)
     # print(label_chunks)
@@ -98,7 +108,7 @@ if __name__ == '__main__':
     # len(list(train_label_dict.keys())), len(list(val_medical_record_dict.keys())), len(list(val_label_dict.keys()))))
 
     print("num of train medical_data={}, label = {}, val  medical_data={}, label = {}".format(len(list(processed_medical_record_dict.keys())),\
-    len(list(processed_label_dict.keys())), len(list(val_medical_record_dict.keys())), len(list(val_label_dict.keys()))))
+    len(list(processed_label_dict.keys())), len(list(processed_val_medical_record_dict.keys())), len(list(processed_val_label_dict.keys()))))
 
     # for labels in train_label_dict.values() :#for label in labels
     #     print("labels = {}".format(labels))
@@ -108,11 +118,11 @@ if __name__ == '__main__':
     print(labels_type)
     print("type = {}".format(labels_type))
     
-    print("befort sort = {}" .format(labels_type))
+    # print("befort sort = {}" .format(labels_type))
     labels_type.sort()
     # other 要在sort 以後加上去 這樣id才會判別回為0 符合
     labels_type = ["OTHER"] + labels_type
-    print("after sort = {}" .format(labels_type))
+    # print("after sort = {}" .format(labels_type))
     labels_num = len(labels_type)
     # label要自己定義 不然使用 讀取label dict 會有隨機性
     # {'OTHER': 0, 'ZIP': 1, 'PATIENT': 2, 'STATE': 3, 'DATE': 4, 'HOSPITAL': 5, 'COUNTRY': 6, 'DURATION': 7, 'STREET': 8, 'URL': 9, 'DEPARTMENT': 10, 'MEDICALRECORD': 11, 'ORGANIZATION': 12, 'CITY': 13, 'TIME': 14, 'ROOM': 15, 
@@ -173,9 +183,9 @@ if __name__ == '__main__':
     # 得到的Label 指有分類的類別 沒有context的內容
     # print("train_labels = {}".format(train_labels))
     # print("val_id_list===")
-    val_id_list = list(val_medical_record_dict.keys())
-    val_medical_record = {sample_id: val_medical_record_dict[sample_id] for sample_id in val_id_list}
-    val_labels = {sample_id: val_label_dict[sample_id] for sample_id in val_id_list}
+    val_id_list = list(processed_val_medical_record_dict.keys())
+    val_medical_record = {sample_id: processed_val_medical_record_dict[sample_id] for sample_id in val_id_list}
+    val_labels = {sample_id: processed_val_label_dict[sample_id] for sample_id in val_id_list}
     
 
     print("Display Model------")
@@ -214,6 +224,6 @@ if __name__ == '__main__':
     ##  Training
     #####
     print("### Train")
-    finetune_model(train_dataloader, val_dataloader, val_dataset, labels_type_table)
+    finetune_model(train_dataloader, val_dataloader, val_dataset, tokenizer,processed_val_medical_record_dict, labels_type_table)
     
     
