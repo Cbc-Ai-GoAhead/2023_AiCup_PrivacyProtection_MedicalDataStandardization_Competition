@@ -12,12 +12,16 @@ import csv
 # i_doc_path = "./submission/answer.txt"
 #i_doc_path = "./11_26_submission_9_12/submission_8_12/answer_8.txt"
 #i_doc_path = "./inference_testing/testingset_answer_dataset_3_12_0.54.txt"
-i_doc_path = "./inference_testing/testingset_answer_dataset_3_12_0.54_2.txt"
+i_doc_path = "./inference_testing/testingset_answer_dataset_5_4_0.62_sliding.txt"
 # i_doc_path = "./inference_testing/answer.txt"
-answer_df = pd.read_csv(i_doc_path, names =["file","class", "start","end","value"], dtype = str, sep="\t", quoting=csv.QUOTE_NONE)
-
+# answer_df = pd.read_csv(i_doc_path, names =["file","class", "start","end","value"], dtype = str, sep="\t", quoting=csv.QUOTE_NONE)
+# answer_df = pd.read_csv(i_doc_path, names =["file","class", "start","end","value"], dtype = str, sep="\t", on_bad_lines=False)# <1.4.0
+answer_df = pd.read_csv(i_doc_path, names =["file","class", "start","end","value"], dtype = str, sep="\t", on_bad_lines='skip', quoting=csv.QUOTE_NONE)
 # for chunk in pd.read_csv(i_doc_path, names =["file","class", "start","end","value"], dtype = str, sep="\t", chunksize=20, quoting=csv.QUOTE_NONE):
 #     print(chunk)
+#error: Expected 5 fields in line 12549, saw 6
+#C error: EOF inside string starting at row 11959
+
 print(answer_df.head())
 #因為要新增第六個欄位 沒有的就給Nan
 
@@ -418,7 +422,8 @@ for row in range(len(answer_df)):
             # break
         except:
             # answer_df.at[row, 'value'] = iso_86_time
-            iso_86_set_list.append(set_value)
+            time_drop_row.append(row)
+            #iso_86_set_list.append(set_value)
             print("Exception set value = {}".format(set_value))
 answer_df = answer_df.drop(time_drop_row).reset_index(drop = True)
 # answer_df = answer_df.fillna("")
@@ -436,7 +441,7 @@ answer_df = answer_df.replace("nan",'')
 # print(answer_df[:50])
 from datetime import datetime
 timestr = datetime.now().strftime('%Y%m-%d%H-%M%S-%f')
-answer_df.to_csv("./inference_testing/answer_time_drop_{}_1231_2.txt".format(timestr), sep = '\t', header=False ,index = None)
+answer_df.to_csv("./inference_testing/answer_time_drop_{}_0101_sliding.txt".format(timestr), sep = '\t', header=False ,index = None)
 # date_df = pd.DataFrame(columns = ['bert_date','regular_date'])
 # time_df = pd.DataFrame(columns = ['bert_time','regular_time'])
 # date_df['bert_date'] = ori_date_list

@@ -63,13 +63,13 @@ if __name__ == '__main__':
     print("Line 62")
     
     # Val data 也需要切割成510 只是不曉得要不要去掉沒用 label 先暫定測試一次
-    # processed_test_medical_record_dict, processed_test_label_dict={}, {}
-    # for fileid in testing_medical_record_dict.keys():
+    processed_test_medical_record_dict, processed_test_label_dict={}, {}
+    for fileid in testing_medical_record_dict.keys():
        
-    #     # print("Key = {}" .format(fileid))
-    #     text_chunks_dict, label_chunks_dict = create_chunks_test_Dataset(fileid, testing_medical_record_dict[fileid],test_label_dict[fileid])
-    #     processed_test_medical_record_dict.update(text_chunks_dict)
-    #     processed_test_label_dict.update(label_chunks_dict)
+        # print("Key = {}" .format(fileid))
+        text_chunks_dict, label_chunks_dict = create_chunks_test_Dataset(fileid, testing_medical_record_dict[fileid],test_label_dict[fileid])
+        processed_test_medical_record_dict.update(text_chunks_dict)
+        processed_test_label_dict.update(label_chunks_dict)
 
     # text_chunks_dict, label_chunks_dict = create_chunks_test_Dataset('file35093', testing_medical_record_dict['file35093'],test_label_dict['file35093'])
     # processed_test_medical_record_dict.update(text_chunks_dict)
@@ -84,7 +84,7 @@ if __name__ == '__main__':
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
      # Put model on device
     model_PATH = "./model/bert-base-cased_9_12_0.5539107501245775dict"
-    model_path = "./experiments/model_ncu_baseline/best_bert-base-cased_3_12_0.545014035385616"#bert-base-cased_9_12_0.5983084987356402"
+    model_path = "./model_slidingwindow_clip_512_256maxlen128/best_bert-base-cased_4_32_0.5688037545104527"#bert-base-cased_9_12_0.5983084987356402"
     #model.load_state_dict(torch.load(model_PATH))#, map_location=torch.device('cpu')))
     model = torch.load(model_path)
     model = model.to(device)
@@ -95,9 +95,9 @@ if __name__ == '__main__':
     # new_testing_medical_record_dict = sorted(testing_medical_record_dict.items(), key=lambda x:x[1])
     # new_test_dict = sorted(test_dict.items(), key=lambda x:x[1])
     print("test_id_list===")
-    test_id_list = list(testing_medical_record_dict.keys())
-    test_medical_record = {sample_id: testing_medical_record_dict[sample_id] for sample_id in test_id_list}
-    test_labels = {sample_id: test_label_dict[sample_id] for sample_id in test_id_list}
+    test_id_list = list(processed_test_medical_record_dict.keys())
+    test_medical_record = {sample_id: processed_test_medical_record_dict[sample_id] for sample_id in test_id_list}
+    test_labels = {sample_id: processed_test_label_dict[sample_id] for sample_id in test_id_list}
     # print("test_id_list = {}".format(test_id_list))#KeyError: 'file35093'
     # print(test_labels)
     test_dataset = testdataset_Privacy_protection_dataset(test_medical_record, test_labels, tokenizer, labels_type_table, "test")
@@ -117,7 +117,7 @@ if __name__ == '__main__':
     ####
     ## Data Set
     ####
-    TESTING_WINDOW_LENGTH = 1785
+    TESTING_WINDOW_LENGTH = 512#1785
     output_string = ""
     for i, sample in enumerate(test_dataset): # 取用dataset是使用 getitem
         test_x, test_y, file_id = sample
@@ -142,22 +142,22 @@ if __name__ == '__main__':
             predict_str = test_medical_record[file_id][start:end]
             # print("redict_label_name={}".format(predict_str))
             # do the postprocessing at here
-            # if "_" in file_id:
+            if "_" in file_id:
 
-            #     output_file_id = file_id.split("_")[0]
-            #     segment_id = file_id.split("_")[1]
-            #     start = TESTING_WINDOW_LENGTH*int(segment_id)+start
-            #     end = TESTING_WINDOW_LENGTH*int(segment_id)+end
-            #     sample_result_str = (output_file_id +'\t'+ predict_label_name +'\t'+ str(start) +'\t'+ str(end) +'\t'+ predict_str + "\n")
+                output_file_id = file_id.split("_")[0]
+                segment_id = file_id.split("_")[1]
+                start = TESTING_WINDOW_LENGTH*int(segment_id)+start
+                end = TESTING_WINDOW_LENGTH*int(segment_id)+end
+                sample_result_str = (output_file_id +'\t'+ predict_label_name +'\t'+ str(start) +'\t'+ str(end) +'\t'+ predict_str + "\n")
             
-            # else:
-            sample_result_str = (file_id +'\t'+ predict_label_name +'\t'+ str(start) +'\t'+ str(end) +'\t'+ predict_str + "\n")
+            else:
+                sample_result_str = (file_id +'\t'+ predict_label_name +'\t'+ str(start) +'\t'+ str(end) +'\t'+ predict_str + "\n")
             # print("sample_result_str={}".format(sample_result_str))
             output_string += sample_result_str
             # print("output_string={}".format(output_string))
     if not os.path.exists("./inference_testing"):
         os.mkdir("./inference_testing")
-    with open("./inference_testing/testingset_answer_dataset_3_12_0.54_sliding.txt", "w", encoding="utf-8") as f:
+    with open("./inference_testing/testingset_answer_dataset_5_4_0.62_sliding.txt", "w", encoding="utf-8") as f:
         f.write(output_string)
 
 

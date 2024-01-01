@@ -37,8 +37,8 @@ if __name__ == '__main__':
     train_medical_record_dict = {} #x
     # train_medical_record_dict = read_text_from_file(train_path)
     # 5 reports
-    train_medical_record_dict = read_text_from_file(train_path[:1])
-    # train_medical_record_dict = read_text_from_file(train_path)
+    # train_medical_record_dict = read_text_from_file(train_path[:1])
+    train_medical_record_dict = read_text_from_file(train_path)
     
     print("len train_medical_record_dict = {}".format(len(train_medical_record_dict)))
     # fileid = "file9830"
@@ -47,8 +47,10 @@ if __name__ == '__main__':
     # #load validation data from path
     # print("#### load validation data from path")
     val_medical_record_dict = {} #x
-    # val_medical_record_dict = read_text_from_file(val_path)
-    val_medical_record_dict = read_text_from_file(val_path[:1])
+    val_medical_record_dict = read_text_from_file(val_path)
+
+
+    # val_medical_record_dict = read_text_from_file(val_path[:1])
     # val_medical_record_dict = read_text_from_file(val_path)
     print("len val_medical_record_dict = {}".format(len(val_medical_record_dict)))
 
@@ -76,6 +78,7 @@ if __name__ == '__main__':
     ##  Process Text and Label
     ##  create_chunks for sliding window
     ####
+    """
     print("train_medical_record_dict.keys() len = {}".format(len(train_medical_record_dict.keys())))
     processed_medical_record_dict, processed_label_dict={}, {}
     for fileid in train_medical_record_dict.keys():
@@ -94,7 +97,7 @@ if __name__ == '__main__':
         text_chunks_dict, label_chunks_dict = create_chunks(fileid, val_medical_record_dict[fileid],val_label_dict[fileid])
         processed_val_medical_record_dict.update(text_chunks_dict)
         processed_val_label_dict.update(label_chunks_dict)
-
+    """
     
     # print(text_chunks)
     # print(label_chunks)
@@ -107,8 +110,8 @@ if __name__ == '__main__':
     # print("num of train medical_data={}, label = {}, val  medical_data={}, label = {}".format(len(list(train_medical_record_dict.keys())),\
     # len(list(train_label_dict.keys())), len(list(val_medical_record_dict.keys())), len(list(val_label_dict.keys()))))
 
-    print("num of train medical_data={}, label = {}, val  medical_data={}, label = {}".format(len(list(processed_medical_record_dict.keys())),\
-    len(list(processed_label_dict.keys())), len(list(processed_val_medical_record_dict.keys())), len(list(processed_val_label_dict.keys()))))
+    # print("num of train medical_data={}, label = {}, val  medical_data={}, label = {}".format(len(list(processed_medical_record_dict.keys())),\
+    # len(list(processed_label_dict.keys())), len(list(processed_val_medical_record_dict.keys())), len(list(processed_val_label_dict.keys()))))
 
     # for labels in train_label_dict.values() :#for label in labels
     #     print("labels = {}".format(labels))
@@ -170,10 +173,21 @@ if __name__ == '__main__':
     ##  DATE TIME DURATION SET
     ####
     print("Prepare Dataset DataLoader")
+    
+    ## ori
+    train_id_list = list(train_medical_record_dict.keys())
+    train_medical_record = {sample_id: train_medical_record_dict[sample_id] for sample_id in train_id_list}
+    train_labels = {sample_id: train_label_dict[sample_id] for sample_id in train_id_list}
 
+    print("val_id_list===")
+    val_id_list = list(val_medical_record_dict.keys())
+    print(val_id_list)
+    val_medical_record = {sample_id: val_medical_record_dict[sample_id] for sample_id in val_id_list}
+    val_labels = {sample_id: val_label_dict[sample_id] for sample_id in val_id_list}
     # processed_medical_record_dict
     # processed_label_dict
     # print(train_medical_record_dict.keys())
+    """
     train_id_list = list(processed_medical_record_dict.keys())
     train_medical_record = {sample_id: processed_medical_record_dict[sample_id] for sample_id in train_id_list}
     train_labels = {sample_id: processed_label_dict[sample_id] for sample_id in train_id_list}
@@ -186,8 +200,8 @@ if __name__ == '__main__':
     val_id_list = list(processed_val_medical_record_dict.keys())
     val_medical_record = {sample_id: processed_val_medical_record_dict[sample_id] for sample_id in val_id_list}
     val_labels = {sample_id: processed_val_label_dict[sample_id] for sample_id in val_id_list}
+    """
     
-
     print("Display Model------")
     from transformers import AutoTokenizer, AutoModelForTokenClassification
     pretrained_weights = "bert-base-cased"
@@ -224,6 +238,7 @@ if __name__ == '__main__':
     ##  Training
     #####
     print("### Train")
-    finetune_model(train_dataloader, val_dataloader, val_dataset, tokenizer,processed_val_medical_record_dict, labels_type_table)
-    
+    #finetune_model(train_dataloader, val_dataloader, val_dataset, tokenizer,processed_val_medical_record_dict, labels_type_table)
+    finetune_model(train_dataloader, val_dataloader, val_dataset, tokenizer,val_medical_record_dict, labels_type_table)
+
     

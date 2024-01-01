@@ -1,3 +1,9 @@
+0101
+training
+ 00_medical_main.py  00_sliding_window_medical_main.py
+inference
+  05_testing_dataset_slidwindow.py
+  11_time_regulation_group.py
 11/23
 新增time_regulation 對時間進行正規化
 Bert 對 Duration和 Set沒有預測出來

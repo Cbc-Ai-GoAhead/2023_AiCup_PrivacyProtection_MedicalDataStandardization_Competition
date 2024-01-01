@@ -46,13 +46,13 @@ if __name__ == '__main__':
   #load train data from path
   print("#### load train data from path")
   train_medical_record_dict = {} #x
-  train_medical_record_dict = read_text_from_file(train_path[:1])
+  train_medical_record_dict = read_text_from_file(train_path)
 
   # print("train_medical_record_dict = {}".format(train_medical_record_dict))
   # #load validation data from path
   print("#### load validation data from path")
   val_medical_record_dict = {} #x
-  val_medical_record_dict = read_text_from_file(val_path[:1])
+  val_medical_record_dict = read_text_from_file(val_path)
 
 
   #####
@@ -69,14 +69,35 @@ if __name__ == '__main__':
   train_label_dict.update(second_dataset_label_dict)
   train_date_label_dict.update(second_date_label_dict)
   val_label_dict, val_date_label_dict = create_label_dict(val_label_path)
+
+  print("train_medical_record_dict.keys() len = {}".format(len(train_medical_record_dict.keys())))
+  processed_train_record_dict, processed_train_label_dict={}, {}
+  for fileid in train_medical_record_dict.keys():
+      
+      # print("Key = {}" .format(fileid))
+      text_chunks_dict, label_chunks_dict = create_chunks(fileid, train_medical_record_dict[fileid],train_label_dict[fileid])
+      processed_train_record_dict.update(text_chunks_dict)
+      processed_train_label_dict.update(label_chunks_dict)
+  # val data 有需要做 Process 去掉沒用的label嗎
+
+  # Val data 也需要切割成510 只是不曉得要不要去掉沒用 label 先暫定測試一次
+  processed_val_medical_record_dict, processed_val_label_dict={}, {}
+  for fileid in val_medical_record_dict.keys():
+      
+      # print("Key = {}" .format(fileid))
+      text_chunks_dict, label_chunks_dict = create_chunks(fileid, val_medical_record_dict[fileid],val_label_dict[fileid])
+      processed_val_medical_record_dict.update(text_chunks_dict)
+      processed_val_label_dict.update(label_chunks_dict)
+
+
   # print("val_date_label_dict = {}".format(val_date_label_dict))
   #####
   ##  Check the number of data
   #####
   # #chect the number of data
   ##1734  #1734  #560 #560
-  print("num of train medical_data={}, label = {}, val  medical_data={}, label = {}".format(len(list(train_medical_record_dict.keys())),\
-    len(list(train_label_dict.keys())), len(list(val_medical_record_dict.keys())), len(list(val_label_dict.keys()))))
+  print("num of train medical_data={}, label = {}, val  medical_data={}, label = {}".format(len(list(processed_train_record_dict.keys())),\
+    len(list(processed_train_label_dict.keys())), len(list(processed_val_medical_record_dict.keys())), len(list(processed_val_label_dict.keys()))))
   # print(len(list(train_medical_record_dict.keys()))) #1734
   # print(len(list(train_label_dict.keys()))) #1734
   # print(len(list(val_medical_record_dict.keys()))) #560
@@ -105,7 +126,7 @@ if __name__ == '__main__':
   #     print(label)
   #     break
   #   break
-  labels_type = list(set( [label[0] for labels in train_label_dict.values() for label in labels] ))
+  labels_type = list(set( [label[0] for labels in processed_train_label_dict.values() for label in labels] ))
   # print("labels_type = {}".format(labels_type))
 
 
@@ -140,14 +161,14 @@ if __name__ == '__main__':
   ####
 
   #check the label_type is enough for validation
-  val_labels_type = list(set( [label[0] for labels in val_label_dict.values() for label in labels] ))
+  val_labels_type = list(set( [label[0] for labels in processed_val_label_dict.values() for label in labels] ))
   for val_label_type in val_labels_type:
     if val_label_type not in labels_type:
       print("Special label in validation:", val_label_type)
   ####
   ##  Parameter Setting
   ####
-  BACH_SIZE = 1
+  BACH_SIZE = 32
 
   ####
   ##  Prepare Dataset DataLoader
@@ -157,9 +178,9 @@ if __name__ == '__main__':
   ####
   print("Prepare Dataset DataLoader")
   # print(train_medical_record_dict.keys())
-  train_id_list = list(train_medical_record_dict.keys())
-  train_medical_record = {sample_id: train_medical_record_dict[sample_id] for sample_id in train_id_list}
-  train_labels = {sample_id: train_label_dict[sample_id] for sample_id in train_id_list}
+  train_id_list = list(processed_train_record_dict.keys())
+  train_medical_record = {sample_id: processed_train_record_dict[sample_id] for sample_id in train_id_list}
+  train_labels = {sample_id: processed_train_label_dict[sample_id] for sample_id in train_id_list}
   print("----Prepare Dataset DataLoader")
   # print("train_medical_record=  {}".format(train_medical_record))
   # {'file13264': 'SPR no: 42I520757G\nMRN no: 4235207\nSite_name: HORNSBY KU-RING-GAI HOSPITAL\n
@@ -168,9 +189,9 @@ if __name__ == '__main__':
   # print("train_labels= {}".format(train_labels))
   # ['DATE', 3401, 3407, '3.4.64', '2064-03-04'], ['DATE', 4118, 4125, '20.4.64', '2064-04-20']]}
   print("val_id_list===")
-  val_id_list = list(val_medical_record_dict.keys())
-  val_medical_record = {sample_id: val_medical_record_dict[sample_id] for sample_id in val_id_list}
-  val_labels = {sample_id: val_label_dict[sample_id] for sample_id in val_id_list}
+  val_id_list = list(processed_val_medical_record_dict.keys())
+  val_medical_record = {sample_id: processed_val_medical_record_dict[sample_id] for sample_id in val_id_list}
+  val_labels = {sample_id: processed_val_label_dict[sample_id] for sample_id in val_id_list}
 
   # print("val_medical_record= key = {}, value={}".format(val_medical_record.keys()[:10], val_medical_record.values()[:10]))
   # print("val_medical_record= {}".format(val_medical_record[:10]))
@@ -194,6 +215,7 @@ if __name__ == '__main__':
   #####
   ##  Testing DataSet
   #####
+  """
   print(len(train_dataset))
   for sample in train_dataset:
     train_x, train_y,_ = sample
@@ -221,7 +243,7 @@ if __name__ == '__main__':
     print(train_y[i].tolist())
     # 會補成512長度
     print("len train_y[i] ={}".format(len(train_y[i].tolist())))
-
+  """
   #####
   ##  Testing Tokenizer  這裡就是在告訴我們 tokenzer完後文本的狀況 
   ## 所以助教給我們程式碼 已經是有修改長度到512 並且文本和label的id有重新修改過
@@ -287,7 +309,7 @@ if __name__ == '__main__':
   # !rm -rf ./logs/
 
   from torch.utils.tensorboard import SummaryWriter
-  writer = SummaryWriter(comment='ncu_sortlabel')
+  writer = SummaryWriter(comment='slidingwindow')
 
   from tqdm import tqdm
   from torch.optim import AdamW
@@ -297,10 +319,10 @@ if __name__ == '__main__':
   model = myModel()
   # print(model)
 
-  BACH_SIZE = 1#1
+  BACH_SIZE = 32#1
   #TRAIN_RATIO = 0.9
   LEARNING_RATE = 1e-4
-  EPOCH = 1
+  EPOCH = 12
   device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
   model = model.to(device) # Put model on device
   optim = AdamW(model.parameters(), lr = LEARNING_RATE)
@@ -329,8 +351,8 @@ if __name__ == '__main__':
       for batch_id in range(batch_size):
           smaple_prediction = decode_model_result(model_predict_tables[batch_id], offset_mappings[batch_id], labels_type_table)
           smaple_ground_truth = batch_labels[batch_id]
-          print("smaple_prediction = {}".format(smaple_prediction))
-          print("smaple_ground_truth = {}".format(smaple_ground_truth))
+          # print("smaple_prediction = {}".format(smaple_prediction))
+          # print("smaple_ground_truth = {}".format(smaple_ground_truth))
           # do the post_processing at here
           # calculeate TP, TN, FP
           smaple_ground_truth = set([tuple(token) for token in smaple_ground_truth])
@@ -370,11 +392,13 @@ if __name__ == '__main__':
       outputs = model(batch_x["input_ids"], batch_x["attention_mask"])
       #print(batch_y.shape)
       train_loss = loss_fct(outputs.transpose(-1, -2), batch_y)
+      train_loss = train_loss.mean()
       #print("train_loss", train_loss)
       writer.add_scalar('Loss/train', train_loss, train_step)
 
       # calculate loss
       train_loss.backward()
+      nn.utils.clip_grad_norm_(model.parameters(), 1.0)
       # update parameters
       optim.step()
 
@@ -405,7 +429,7 @@ if __name__ == '__main__':
     # model.save_pretrained(output_dir)
     # output_dir= output_dir+"_token"
     # tokenizer.save_pretrained(output_dir)
-    output_dir = "./model_ncu_baseline/" + "bert-base-cased"+"_"+str(epoch)+"_"+str(BACH_SIZE)+"_"+str(sum_val_F1/len(val_dataloader))
+    output_dir = "./model_slidingwindow_clip_512_256maxlen128/" + "bert-base-cased"+"_"+str(epoch)+"_"+str(BACH_SIZE)+"_"+str(sum_val_F1/len(val_dataloader))
     # torch.save(model.state_dict(), output_dir+"dict")
     # torch.save(model, output_dir)
     # model.save_model(output_dir)
@@ -413,7 +437,7 @@ if __name__ == '__main__':
     
     if sum_val_F1 > base_f1_score:
       base_f1_score = sum_val_F1
-      output_dir = "./model_ncu_baseline/" + "best_bert-base-cased"+"_"+str(epoch)+"_"+str(BACH_SIZE)+"_"+str(sum_val_F1/len(val_dataloader))
+      output_dir = "./model_slidingwindow_clip_512_256maxlen128/" + "best_bert-base-cased"+"_"+str(epoch)+"_"+str(BACH_SIZE)+"_"+str(sum_val_F1/len(val_dataloader))
       # model.save_pretrained(output_dir)
       # output_dir= output_dir+"_token"
       # tokenizer.save_pretrained(output_dir)
@@ -469,15 +493,15 @@ if __name__ == '__main__':
       # sample_result_str = ""
       for predict_label_range in model_predict_list:
           predict_label_name, start, end = predict_label_range
-          predict_str = val_medical_record_dict[id][start:end]
-          print("predict_str = {}".format(predict_str))
+          predict_str = processed_val_medical_record_dict[id][start:end]
+          # print("predict_str = {}".format(predict_str))
           # do the postprocessing at here
           # Predict_str 會抓到 \n 換行符號 要再處理
           sample_result_str = (id +'\t'+ predict_label_name +'\t'+ str(start) +'\t'+ str(end) +'\t'+ predict_str + "\n")
           output_string += sample_result_str
       #print(y)
   # print("output_string = {}".format(output_string))
-  exp_path = "./submission_ncu_baseline"+"_"+str(epoch)+"_"+str(BACH_SIZE)
+  exp_path = "./submission_slidingwindow_clip"+"_"+str(epoch)+"_"+str(BACH_SIZE)
   if not os.path.exists(exp_path):
       os.mkdir(exp_path)
   answer_path = exp_path+"/"+"answer.txt"
@@ -488,21 +512,21 @@ if __name__ == '__main__':
   ##  需要測試 Other
   #####
 
-  print("### Other")
-  for i, sample in enumerate(val_dataset):
-    model.eval()
-    x, y, id = sample
-    print(id)
-    encodings = tokenizer(x, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True")
-    encodings["input_ids"] = encodings["input_ids"].to(device)
-    encodings["attention_mask"] = encodings["attention_mask"].to(device)
-    outputs = model(encodings["input_ids"], encodings["attention_mask"])
-    #output = softmax(outputs.logits)
-    model_predict_table = torch.argmax(outputs.squeeze(), dim=-1)
-    #print(model_predict_table)
-    print(decode_model_result(model_predict_table, encodings["offset_mapping"][0], labels_type_table))
-    print(y)
-    break
+  # print("### Other")
+  # for i, sample in enumerate(val_dataset):
+  #   model.eval()
+  #   x, y, id = sample
+  #   print(id)
+  #   encodings = tokenizer(x, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True")
+  #   encodings["input_ids"] = encodings["input_ids"].to(device)
+  #   encodings["attention_mask"] = encodings["attention_mask"].to(device)
+  #   outputs = model(encodings["input_ids"], encodings["attention_mask"])
+  #   #output = softmax(outputs.logits)
+  #   model_predict_table = torch.argmax(outputs.squeeze(), dim=-1)
+  #   #print(model_predict_table)
+  #   print(decode_model_result(model_predict_table, encodings["offset_mapping"][0], labels_type_table))
+  #   print(y)
+  #   break
 
 
 

@@ -5,12 +5,32 @@
 from pprint import pprint as pp
 #https://www.mim.ai/fine-tuning-bert-model-for-arbitrarily-long-texts-part-1/
 #https://blog.csdn.net/weixin_42223207/article/details/119336324
-
+import copy
 # WINDOW_LENGTH = 510
 # STRIDE_LENGTH = 510
-WINDOW_LENGTH = 1785 #1428 會差 512 一點點還是多一點直接截斷
-STRIDE_LENGTH = 510
+WINDOW_LENGTH =  512#1024#2048#8000#1785 #1428 會差 512 一點點還是多一點直接截斷 #4000
+STRIDE_LENGTH =  256#512#1024#4096
 def reposition(preserve_label_list_group, conetext_start_position):
+  #file_id start end value
+  # print("postion process list={}".format(preserve_label_list_group))
+  processed_preserve_label_list_group = []
+  for id_list in preserve_label_list_group:
+    value = id_list[3]
+    #tmp_val.append(value) # context的內容
+    
+    # print("conetext_start_position = {}".format(conetext_start_position))
+    start = id_list[1]- conetext_start_position
+    end = id_list[2]- conetext_start_position
+    # print("start = {} end={}".format(start, end))
+    if start >= WINDOW_LENGTH or end >=WINDOW_LENGTH:# 把超過文本範圍的值去掉
+      continue
+    # reinsert to id_list
+    id_list[1] = start
+    id_list[2] = end
+    
+    processed_preserve_label_list_group.append(id_list)
+  return processed_preserve_label_list_group
+def final_reposition(preserve_label_list_group, conetext_start_position):
   #file_id start end value
   processed_preserve_label_list_group = []
   for id_list in preserve_label_list_group:
@@ -20,13 +40,14 @@ def reposition(preserve_label_list_group, conetext_start_position):
     # print("conetext_start_position = {}".format(conetext_start_position))
     start = id_list[1]- conetext_start_position
     end = id_list[2]- conetext_start_position
-
+    # print("start = {} end={}".format(start, end))
+    #
+    # if start >= WINDOW_LENGTH or end >=WINDOW_LENGTH:# 把超過文本範圍的值去掉
+    #   continue
     # reinsert to id_list
     id_list[1] = start
     id_list[2] = end
-    # print("start = {} end={}".format(start, end))
-    if start >= WINDOW_LENGTH or end >=WINDOW_LENGTH:# 把超過文本範圍的值去掉
-      continue
+    
     processed_preserve_label_list_group.append(id_list)
   return processed_preserve_label_list_group
 def testing_find_label_value_in_text(text_list, label_list_group, conetext_start_position,conetext_end_position):#label_value_to_text):
@@ -61,7 +82,7 @@ def testing_find_label_value_in_text(text_list, label_list_group, conetext_start
   # label 的position 重新計算位置
   preserve_label_list_group = reposition(preserve_label_list_group, conetext_start_position)
   #如果文本 只有 other的類別要去除
-  #先用label 的值來找context有沒有符合
+   #先用label 的值來找context有沒有符合
   num_of_label_in_context=0
   for id_list in preserve_label_list_group:
     value = id_list[3]
@@ -150,11 +171,12 @@ def find_label_value_in_text(t, label_list_group, new_position):#label_value_to_
   # 如果get val有值就更新 processed_label_dict
   return tmp_val, processd_label_list_group
 
-def create_chunks(fileid, text,label_list_group):
+def create_chunks(fileid, text,ori_label_list_group):
   
   chunk_num = 0
   processd_label_list_group=[]
-
+  # 使用 copy 避免list 被賦予值被修改到
+  label_list_group = copy.deepcopy(ori_label_list_group)
 
   processed_medical_record_dict = {}
   processed_label_dict = {}
@@ -178,54 +200,282 @@ def create_chunks(fileid, text,label_list_group):
   #
   num_segment = len(text)//WINDOW_LENGTH
   max_length = num_segment*WINDOW_LENGTH
-  remove_over_max_length_label_list_group = []
-  for id_list in label_list_group:# 去掉最後超出範圍的, 或是最後一個要由後往前取
-    start = id_list[1]
-    end = id_list[2]
-    # print("max_length ={}, start={}, end={}".format(max_length, start, end))
-    if (int(start) < max_length) and (int(end)< max_length):#前一份文本
-      remove_over_max_length_label_list_group.append(id_list)
-  # print("ori lablel len ={}, remove label len = {}".format(label_list_group, remove_over_max_length_label_list_group))
-  while p+WINDOW_LENGTH < len(text):# 會捨棄最後的文本
-    conetext_start_position = chunk_num*WINDOW_LENGTH
-    conetext_end_position = (chunk_num+1)*WINDOW_LENGTH
-    # get_val_list, processd_label_list_group= find_label_value_in_text(t, label_list_group,new_position)#label_value_to_text)
-    # get_val_list, processd_label_list_group= testing_find_label_value_in_text([text[p:p+WINDOW_LENGTH]], remove_over_max_length_label_list_group,conetext_start_position,conetext_end_position)#label_value_to_text)
-    num_of_label_in_context, processd_label_list_group= testing_find_label_value_in_text([text[p:p+WINDOW_LENGTH]], remove_over_max_length_label_list_group,conetext_start_position,conetext_end_position)#label_value_to_text)
-    # print("chunk_num = {}".format(chunk_num))
-    # print("get_val_list= {}, o_val_list={}".format(get_val_list, processd_label_list_group))
+  if num_segment >0 :
+    # 由後往前加
+    final_conetext_start_position = len(text)-WINDOW_LENGTH
+    final_conetext_end_position = len(text)
+    # print("---fileid={}".format(fileid))
+    # print("text_len = {}, final_conetext_start={}, final_conetext_end_={}".format(len(text),final_conetext_start_position, final_conetext_end_position))
+    preserve_in_max_length_label_list_group = []
+    final_in_context_length_label_list_group = []
+    for id_list in label_list_group:# 去掉最後超出範圍的, 或是最後一個要由後往前取
+      start = id_list[1]
+      end = id_list[2]
+      # print("max_length ={}, start={}, end={}".format(max_length, start, end))
+      if (int(start) < max_length) and (int(end)< max_length):#前一份文本
+        preserve_in_max_length_label_list_group.append(id_list)
+      
+    # print("ori lablel len ={}, remove label len = {}".format(label_list_group, remove_over_max_length_label_list_group))
+    while p+WINDOW_LENGTH < len(text):# 會捨棄最後的文本
+      tmpfileid = fileid
+      conetext_start_position = chunk_num*WINDOW_LENGTH
+      conetext_end_position = (chunk_num+1)*WINDOW_LENGTH
 
-    #if len(get_val_list)!=0: #去掉沒有類別的值
-    if num_of_label_in_context!=0: #去掉沒有類別的值
+      # 或許應該先改成處理 label位置判別在讀context
+      # get_val_list, processd_label_list_group= find_label_value_in_text(t, label_list_group,new_position)#label_value_to_text)
+      # get_val_list, processd_label_list_group= testing_find_label_value_in_text([text[p:p+WINDOW_LENGTH]], remove_over_max_length_label_list_group,conetext_start_position,conetext_end_position)#label_value_to_text)
+      num_of_label_in_context, processd_label_list_group= testing_find_label_value_in_text([text[p:p+WINDOW_LENGTH]], preserve_in_max_length_label_list_group,conetext_start_position,conetext_end_position)#label_value_to_text)
+      # print("chunk_num = {}".format(chunk_num))
+      # print("get_val_list= {}, o_val_list={}".format(get_val_list, processd_label_list_group))
+
+      #if len(get_val_list)!=0: #去掉沒有類別的值
+      if num_of_label_in_context!=0: #--去掉沒有類別的值
+        tmpfileid+="_"+str(chunk_num)
+        
+        # print("num_of--fileid = {}".format(tmpfileid))
+        # print("p:p+WINDOW_LENGTH] = {} {}".format(p, p+WINDOW_LENGTH))
+        
+        processed_medical_record_dict[tmpfileid]=text[p:p+WINDOW_LENGTH]
+        # print("processed_medical_record_dict[fileid] = {}".format(processed_medical_record_dict[fileid]))
+        # print("len processed_medical_record_dict = {}" .format(len(processed_medical_record_dict[fileid])))
+        processed_label_dict[tmpfileid]=processd_label_list_group
+      #--去掉沒有類別的值
+      chunk_num+=1 # 向後位移
+      # print("--chunk_num = {}".format(chunk_num))
+      p += STRIDE_LENGTH
+        # for processed_label_list in processd_label_list_group:
+        #   processed_label_list[1] = processed_label_list[1]-
+        # l.extend(o_val_list)
+      # print("t={}" .format(t))
+      # print("l={}" .format(l))
+    # 最後會有超出文本範圍的內容
+    #while p+WINDOW_LENGTH < len(text):
+    
+    
+    # print("Handle final context")
+    # print("label_list_group = {}".format(label_list_group))
+    for id_list in ori_label_list_group:# 去掉最後超出範圍的, 或是最後一個要由後往前取
+      start = id_list[1]
+      end = id_list[2]
+      # print("------!!!處理由後往前加")
+      if (int(start) >=final_conetext_start_position) and (int(end)<= final_conetext_end_position):
+        # print(id_list)
+        # print("start = {}, end={}, final_conetext_start_position={}".format(start, end, final_conetext_start_position))
+        final_in_context_length_label_list_group.append(id_list)
+        # print("final_in_context_length_label_list_group = {}".format(final_in_context_length_label_list_group))
+    
+    # chunk_num +=1
+    # print("fileid = {}".format(fileid))
+    # print("final ={}".format(final_in_context_length_label_list_group))
+    # print("context len ={}, final_conetext_start_position={}".format(len(text),final_conetext_start_position))
+    processd_label_list_group= reposition(final_in_context_length_label_list_group, final_conetext_start_position)
+    if processd_label_list_group:
+      # print("GETTT!!!")
+      # print("final_conetext_start_position ={}".format(final_conetext_start_position))
+      print(processd_label_list_group)
+      # 把文本放進去
+      tmpfileid = fileid
+      tmpfileid+="_"+str(chunk_num)
       
-      fileid+="_"+str(chunk_num)
-      # print("fileid = {}".format(fileid))
-      # print("p:p+WINDOW_LENGTH] = {} {}".format(p, p+WINDOW_LENGTH))
-      
-      processed_medical_record_dict[fileid]=text[p:p+WINDOW_LENGTH]
-      # print("processed_medical_record_dict[fileid] = {}".format(processed_medical_record_dict[fileid]))
-      # print("len processed_medical_record_dict = {}" .format(len(processed_medical_record_dict[fileid])))
-      processed_label_dict[fileid]=processd_label_list_group
-    chunk_num+=1 # 向後位移
-    p += STRIDE_LENGTH
-      # for processed_label_list in processd_label_list_group:
-      #   processed_label_list[1] = processed_label_list[1]-
-      # l.extend(o_val_list)
-    # print("t={}" .format(t))
-    # print("l={}" .format(l))
-  # 最後會有超出文本範圍的內容
-  #while p+WINDOW_LENGTH < len(text):
-  # 由後往前加
-  # conetext_start_position = len(text)-WINDOW_LENGTH
-  # conetext_end_position = len(text)
-  
-  # print("---Processed Medical Report={}".format(processed_medical_record_dict))
-  # print("---Processed label Report={}".format(processed_label_dict))
-  # print("---Processed Medical Report={}".format(processed_medical_record_dict))
-  # print("---Processed label Report={}".format(processed_label_dict))
+      processed_medical_record_dict[tmpfileid]=text[final_conetext_start_position:final_conetext_end_position]
+
+      processed_label_dict[tmpfileid] = processd_label_list_group
+    # 因為文本切割 所以 label position 要修正
+
+    
+    # print("---Processed Medical Report={}".format(processed_medical_record_dict))
+    # print("---Processed label Report={}".format(processed_label_dict))
+    # print("---Processed Medical Report={}".format(processed_medical_record_dict))
+    # print("---Processed label Report={}".format(processed_label_dict))
+  else: # 如果文本是 小於window size
+    processed_medical_record_dict[fileid]=text
+    processed_label_dict[fileid] = label_list_group
   return processed_medical_record_dict,processed_label_dict
+#---Testing Dataset
 
+TESTING_WINDOW_LENGTH = 512#1785 #1428 會差 512 一點點還是多一點直接截斷
+TESTING_STRIDE_LENGTH = 512#1785 # 不能有重複的文本被預測 所以文本可以小一點 避免 後半部沒預測到？
+def reposition_testdataset(preserve_label_list_group, conetext_start_position):
+  #file_id start end value
+  # print("postion process list={}".format(preserve_label_list_group))
+  processed_preserve_label_list_group = []
+  for id_list in preserve_label_list_group:
+    value = id_list[1]
+    #tmp_val.append(value) # context的內容
+    
+    # print("conetext_start_position = {}".format(conetext_start_position))
+    start = id_list[0]- conetext_start_position
 
+    # print("start = {} end={}".format(start, end))
+    if start >= WINDOW_LENGTH:# 把超過文本範圍的值去掉
+      continue
+    # reinsert to id_list
+    id_list[0] = start
+    
+    processed_preserve_label_list_group.append(id_list)
+  return processed_preserve_label_list_group
+def final_reposition_testdataset(preserve_label_list_group, conetext_start_position):
+  #file_id start end value
+  # print("postion process list={}".format(preserve_label_list_group))
+  processed_preserve_label_list_group = []
+  for id_list in preserve_label_list_group:
+    value = id_list[1]
+    #tmp_val.append(value) # context的內容
+    
+    # print("conetext_start_position = {}".format(conetext_start_position))
+    start = id_list[0]- conetext_start_position
+
+    
+    # reinsert to id_list
+    id_list[0] = start
+    
+    processed_preserve_label_list_group.append(id_list)
+  return processed_preserve_label_list_group
+
+def find_label_value_in_test_text(text_list, label_list_group, conetext_start_position):#label_value_to_text):
+  l = []
+
+  tmp_val = []
+  # check label poistion if outlier then remove
+  preserve_label_list_group=[]
+  for id_list in label_list_group:
+    start = id_list[0]
+    # end = id_list[1]
+    if (start>=conetext_start_position):
+      #先把在這個範圍的 label 存起來
+      preserve_label_list_group.append(id_list)
+
+  preserve_label_list_group = reposition_testdataset(preserve_label_list_group, conetext_start_position)
+  #如果文本 只有 other的類別要去除
+   #先用label 的值來找context有沒有符合
+  num_of_label_in_context=0
+  for id_list in preserve_label_list_group:
+    value = id_list[1]
+    if(text_list[-1].find(value)==-1):
+      continue
+    else:
+      num_of_label_in_context+=1
+  # 作到這裡就回傳
+  return num_of_label_in_context, preserve_label_list_group
+def create_chunks_test_Dataset(fileid, text,ori_label_list_group):
+  
+  chunk_num = 0
+  processd_label_list_group=[]
+  # 使用 copy 避免list 被賦予值被修改到
+  label_list_group = copy.deepcopy(ori_label_list_group)
+
+  processed_medical_record_dict = {}
+  processed_label_dict = {}
+
+  l = []
+  p = 0
+  # fileid , start, value => predict label
+  #1097	1	433475.RDC
+  
+  #label 位置 label[0] =1, lable[1] = "433475.RDC"
+  # 0 , 1
+  # 1 	433475.RDC
+  # if fileid =="file35093":
+  #   print("fileid = {}".format(fileid))
+  #   print(text)
+  context_len = len(text)
+  num_segment = context_len//TESTING_WINDOW_LENGTH
+  max_length = num_segment*TESTING_WINDOW_LENGTH
+  if num_segment >0 :
+    # 由後往前加
+    final_conetext_start_position = max_length#取得剩下文本長度
+    #context 剩下的區間
+    context_range = len(text)-max_length
+    final_conetext_end_position = len(text)
+    # print("---fileid={}".format(fileid))
+    # print("text_len = {}, final_conetext_start={}, final_conetext_end_={}".format(len(text),final_conetext_start_position, final_conetext_end_position))
+    preserve_in_max_length_label_list_group = []
+    
+    for id_list in label_list_group:# 去掉最後超出範圍的, 或是最後一個要由後往前取
+      start = id_list[0]
+      # end = id_list[2]
+      # print("max_length ={}, start={}, end={}".format(max_length, start, end))
+      if (int(start) < max_length):#前一份文本
+        preserve_in_max_length_label_list_group.append(id_list)
+      
+    # print("ori lablel len ={}, remove label len = {}".format(label_list_group, remove_over_max_length_label_list_group))
+    
+    while p+TESTING_WINDOW_LENGTH < len(text):# 會捨棄最後的文本
+      tmpfileid = fileid
+      conetext_start_position = chunk_num*TESTING_WINDOW_LENGTH
+      conetext_end_position = (chunk_num+1)*TESTING_WINDOW_LENGTH
+
+      # 或許應該先改成處理 label位置判別在讀context
+      # get_val_list, processd_label_list_group= find_label_value_in_text(t, label_list_group,new_position)#label_value_to_text)
+      # get_val_list, processd_label_list_group= testing_find_label_value_in_text([text[p:p+WINDOW_LENGTH]], remove_over_max_length_label_list_group,conetext_start_position,conetext_end_position)#label_value_to_text)
+      num_of_label_in_context, processd_label_list_group= find_label_value_in_test_text([text[p:p+TESTING_WINDOW_LENGTH]], preserve_in_max_length_label_list_group,conetext_start_position)#label_value_to_text)
+      # print("chunk_num = {}".format(chunk_num))
+      # print("get_val_list= {}, o_val_list={}".format(get_val_list, processd_label_list_group))
+
+      #if len(get_val_list)!=0: #去掉沒有類別的值
+      if num_of_label_in_context!=0: #--去掉沒有類別的值
+        
+        tmpfileid+="_"+str(chunk_num)
+        # print("num_of--fileid = {}".format(fileid))
+        # print("p:p+WINDOW_LENGTH] = {} {}".format(p, p+WINDOW_LENGTH))
+        
+        processed_medical_record_dict[tmpfileid]=text[p:p+TESTING_WINDOW_LENGTH]
+        # print("processed_medical_record_dict[fileid] = {}".format(processed_medical_record_dict[fileid]))
+        # print("len processed_medical_record_dict = {}" .format(len(processed_medical_record_dict[fileid])))
+        processed_label_dict[tmpfileid]=processd_label_list_group
+      #--去掉沒有類別的值
+      chunk_num+=1 # 向後位移
+      # print("--chunk_num = {}".format(chunk_num))
+      p += TESTING_STRIDE_LENGTH
+      
+        # for processed_label_list in processd_label_list_group:
+        #   processed_label_list[1] = processed_label_list[1]-
+        # l.extend(o_val_list)
+      # print("t={}" .format(t))
+      # print("l={}" .format(l))
+    
+    
+    # 最後會有超出文本範圍的內容
+    #while p+WINDOW_LENGTH < len(text):  
+    # print("Handle final context")
+    # print("label_list_group = {}".format(label_list_group))
+    final_in_context_length_label_list_group = []
+    for id_list in ori_label_list_group:# 去掉最後超出範圍的, 或是最後一個要由後往前取
+      start = id_list[0]
+      #處理由後往前加
+      if (int(start) >=final_conetext_start_position):
+        # print(id_list)
+        # print("start = {}, end={}, final_conetext_start_position={}".format(start, end, final_conetext_start_position))
+        final_in_context_length_label_list_group.append(id_list)
+        # print("final_in_context_length_label_list_group = {}".format(final_in_context_length_label_list_group))
+    tmpfileid = fileid
+    tmpfileid+="_"+str(chunk_num)
+
+    # chunk_num +=1
+    # print("fileid = {}".format(fileid))
+    # print("final ={}".format(final_in_context_length_label_list_group))
+    # print("context len ={}, final_conetext_start_position={}".format(len(text),final_conetext_start_position))
+    processd_label_list_group= final_reposition_testdataset(final_in_context_length_label_list_group, final_conetext_start_position)
+    if processd_label_list_group: #處理由後往前加
+      # print("GETTT!!!")
+      # print("final_conetext_start_position ={}".format(final_conetext_start_position))
+      # print(processd_label_list_group)
+      # 把文本放進去
+      processed_medical_record_dict[tmpfileid]=text[final_conetext_start_position:final_conetext_end_position]
+
+      processed_label_dict[tmpfileid] = processd_label_list_group
+    # 因為文本切割 所以 label position 要修正
+
+    
+    # print("---Processed Medical Report={}".format(processed_medical_record_dict))
+    # print("---Processed label Report={}".format(processed_label_dict))
+    # print("---Processed Medical Report={}".format(processed_medical_record_dict))
+    # print("---Processed label Report={}".format(processed_label_dict))
+  else:
+    # print("ELSE fileid = {}".format(fileid))
+    processed_medical_record_dict[fileid]=text
+    processed_label_dict[fileid] = label_list_group
+  return processed_medical_record_dict,processed_label_dict
 
 
 
@@ -379,7 +629,7 @@ def decode_model_result(model_predict_table, offsets_mapping, labels_type_table)
   predict_y = []
   pre_label_id = 0
   for position_id, label_id in enumerate(model_predict_list):
-    if label_id!=0:
+    if label_id!=0:# 去除 OTHER
       if pre_label_id!=label_id:
         start = int(offsets_mapping[position_id][0])
       end = int(offsets_mapping[position_id][1])
@@ -389,38 +639,7 @@ def decode_model_result(model_predict_table, offsets_mapping, labels_type_table)
   if pre_label_id!=0:
     predict_y.append([id_to_label[pre_label_id], start, end])
   return predict_y
-
-def calculate_batch_score(batch_labels, model_predict_tables, offset_mappings, labels_type_table):
-    score_table = {"TP":0, "FP":0, "TN":0}
-    batch_size = model_predict_tables.shape[0]
-    for batch_id in range(batch_size):
-        smaple_prediction = decode_model_result(model_predict_tables[batch_id], offset_mappings[batch_id], labels_type_table)
-        smaple_ground_truth = batch_labels[batch_id]
-        #print(smaple_prediction)
-        #print(smaple_ground_truth)
-        # do the post_processing at here
-        # calculeate TP, TN, FP
-        smaple_ground_truth = set([tuple(token) for token in smaple_ground_truth])
-        smaple_prediction = set([tuple(token) for token in smaple_prediction])
-        score_table["TP"] += len( smaple_ground_truth & smaple_prediction)
-        score_table["TN"] += len( smaple_ground_truth - smaple_prediction)
-        score_table["FP"] += len( smaple_prediction - smaple_ground_truth)
-    if (score_table["TP"] + score_table["FP"])==0 or (score_table["TP"] + score_table["TN"])==0:
-      return 0, 0, 0
-
-    Precision = score_table["TP"] / (score_table["TP"] + score_table["FP"])
-    Recall = score_table["TP"] / (score_table["TP"] + score_table["TN"])
-    if(Precision + Recall) ==0:
-      return 0, 0, 0
-
-    F1_score = 2 * (Precision * Recall) / (Precision + Recall)
-    return Precision, Recall, F1_score
-
-
-
-
-
-      
+    
 
 ####
 ## Decode
@@ -447,10 +666,11 @@ def calculate_batch_score(batch_labels, model_predict_tables, offset_mappings, l
   score_table = {"TP":0, "FP":0, "TN":0}
   batch_size = model_predict_tables.shape[0]
   for batch_id in range(batch_size):
+      # print("model_predict_tables[batch_id] = {}".format(model_predict_tables[batch_id]))
       smaple_prediction = decode_model_result(model_predict_tables[batch_id], offset_mappings[batch_id], labels_type_table)
       smaple_ground_truth = batch_labels[batch_id]
-      #print(smaple_prediction)
-      #print(smaple_ground_truth)
+      # print("smaple_prediction = {}".format(smaple_prediction))
+      # print("smaple_ground_truth = {}".format(smaple_ground_truth))
       # do the post_processing at here
       # calculeate TP, TN, FP
       smaple_ground_truth = set([tuple(token) for token in smaple_ground_truth])
@@ -489,8 +709,10 @@ def print_dataset_loaderstatus(train_dataset, train_dataloader,tokenizer, labels
         # print("sample = {}".format(sample))
         x_name,train_x, train_y, y_label = sample
         print("x_name = {},".format(x_name))
-        print("len x_name={}".format(len(x_name[0])))
-        print("y_label = {},".format(y_label))
+        
+        # print("len x_name={}".format(len(x_name[0])))
+        # print("train_x = {} , train_y={}".format(train_x, train_y))
+        # print("y_label = {},".format(y_label))
         # print("train_x = {}, train_y= {}".format(train_x, train_y))
         # print("len train_x = {}, train_y= {}".format(len(train_x), len(train_y)))
         print("-----------------")
@@ -506,12 +728,12 @@ def print_dataset_loaderstatus(train_dataset, train_dataloader,tokenizer, labels
         # 會補成512長度
         # print(train_x)
         # print(tokenizer.convert_ids_to_tokens(train_x["input_ids"].cpu().detach().numpy()))
-        print("type = {}".format(train_x["input_ids"]))
-        print("type = {}".format(train_x["input_ids"].tolist()))
+        # print("type = {}".format(train_x["input_ids"]))
+        # print("type = {}".format(train_x["input_ids"].tolist()))
         print("---------------------")
         print(train_x[i])
         tmp_ids_to_tokens = tokenizer.convert_ids_to_tokens(train_x["input_ids"].tolist()[0])
-        print(tmp_ids_to_tokens)
+        # print(tmp_ids_to_tokens)
         total=""
         for text in tmp_ids_to_tokens:
             total+= text+" "
