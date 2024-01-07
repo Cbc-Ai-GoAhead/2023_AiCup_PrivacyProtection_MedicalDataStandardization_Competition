@@ -15,7 +15,7 @@ class myModel(torch.nn.Module):
 
         super(myModel, self).__init__()
         self.num_labels = 22
-        self.bert = AutoModel.from_pretrained('bert-base-cased')
+        self.bert = AutoModel.from_pretrained('bert-base-cased', cache_dir="./checkpoint/")
         self.droupout = nn.Dropout(p=0.1, inplace=False)
         self.fc = nn.Linear(768, 22)
 
@@ -29,19 +29,38 @@ class myModel(torch.nn.Module):
         out = self.fc(output)
 
         return out
+class myLongModel(torch.nn.Module):
 
+    def __init__(self):
+
+        super(myLongModel, self).__init__()
+        self.num_labels = 22
+        self.bert = AutoModel.from_pretrained('allenai/longformer-base-4096', cache_dir="./checkpoint/")
+        self.droupout = nn.Dropout(p=0.1, inplace=False)
+        self.fc = nn.Linear(768, 22)
+
+        # self.init_weights()
+    def forward(self, input_ids, attention_mask):
+
+        output = self.bert(input_ids=input_ids, attention_mask=attention_mask, return_dict=True)
+        #print(output.pooler_output.shape)
+        #print(output.last_hidden_state.shape)
+        output = self.droupout(output.last_hidden_state)
+        out = self.fc(output)
+
+        return out
 if __name__ == '__main__':
     # model_name = "bert-base-cased"
     labels_num = 22
     #Method 1 load pretrained weight
-    pretrained_weights = "bert-base-cased"
-    tokenizer = AutoTokenizer.from_pretrained(pretrained_weights)
+    pretrained_weights = "allenai/longformer-base-4096"
+    tokenizer = AutoTokenizer.from_pretrained(pretrained_weights, cache_dir="./checkpoint/")
     # config 用來修改模型參數的
     """
     config = AutoConfig.from_pretrained(pretrained_weights, num_labels = labels_num)
     print(config)
     """
-    model = AutoModelForTokenClassification.from_pretrained(pretrained_weights, num_labels = labels_num)
+    model = AutoModelForTokenClassification.from_pretrained(pretrained_weights, cache_dir="./checkpoint/",num_labels = labels_num)
     print(model)
     #model.save_pretrained("./model/bert_save_testing")
 
