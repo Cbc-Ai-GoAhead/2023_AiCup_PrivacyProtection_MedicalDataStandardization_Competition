@@ -314,12 +314,12 @@ if __name__ == '__main__':
   from tqdm import tqdm
   from torch.optim import AdamW
   from torch.nn import CrossEntropyLoss
-  from bert_model import myModel
+  from bert_model import myLongModel
 
-  model = myModel()
+  model = myLongModel()
   # print(model)
 
-  BACH_SIZE = 32#1
+  BACH_SIZE = 1#1
   #TRAIN_RATIO = 0.9
   LEARNING_RATE = 1e-4
   EPOCH = 12

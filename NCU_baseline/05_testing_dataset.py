@@ -83,8 +83,9 @@ if __name__ == '__main__':
     #model = myModel()
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
      # Put model on device
-    model_PATH = "./model/bert-base-cased_9_12_0.5539107501245775dict"
-    model_path = "./experiments/model_ncu_baseline/best_bert-base-cased_3_12_0.545014035385616"#bert-base-cased_9_12_0.5983084987356402"
+    # model_PATH = "./model/bert-base-cased_9_12_0.5539107501245775dict"
+    # model_path = "./experiments/model_ncu_baseline/best_bert-base-cased_3_12_0.545014035385616"#bert-base-cased_9_12_0.5983084987356402"
+    model_path = "./model_longformer/best_longgormer-base-4096_0_1_0.9026852202445349"
     #model.load_state_dict(torch.load(model_PATH))#, map_location=torch.device('cpu')))
     model = torch.load(model_path)
     model = model.to(device)
@@ -157,7 +158,7 @@ if __name__ == '__main__':
             # print("output_string={}".format(output_string))
     if not os.path.exists("./inference_testing"):
         os.mkdir("./inference_testing")
-    with open("./inference_testing/testingset_answer_dataset_3_12_0.54_sliding.txt", "w", encoding="utf-8") as f:
+    with open("./inference_testing/longformer.txt", "w", encoding="utf-8") as f:
         f.write(output_string)
 
 

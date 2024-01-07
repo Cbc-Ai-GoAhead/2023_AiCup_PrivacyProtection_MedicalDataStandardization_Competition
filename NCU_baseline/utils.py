@@ -8,8 +8,8 @@ from pprint import pprint as pp
 import copy
 # WINDOW_LENGTH = 510
 # STRIDE_LENGTH = 510
-WINDOW_LENGTH =  512#1024#2048#8000#1785 #1428 會差 512 一點點還是多一點直接截斷 #4000
-STRIDE_LENGTH =  256#512#1024#4096
+WINDOW_LENGTH =  4096#1024#2048#8000#1785 #1428 會差 512 一點點還是多一點直接截斷 #4000
+STRIDE_LENGTH =  1024#512#1024#4096
 def reposition(preserve_label_list_group, conetext_start_position):
   #file_id start end value
   # print("postion process list={}".format(preserve_label_list_group))

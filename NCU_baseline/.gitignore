@@ -5,3 +5,7 @@ model.zip
 model_pre/
 experiments/
 checkpoint/
+model_longformer/
+longformer_model_slidingwindow_clip_4096_1024maxlen1024/
+experiments/
+checkpoints/

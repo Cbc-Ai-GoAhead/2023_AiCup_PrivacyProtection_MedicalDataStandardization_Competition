@@ -119,7 +119,10 @@ class Longformer_Privacy_protection_dataset(Dataset):
     # 文本丟入 encoding進行編碼 進行斷詞#512
     #encodings = self.tokenizer(batch_medical_record, padding=True, truncation=True, max_length=256,return_tensors="pt", return_offsets_mapping="True") # truncation=True
     # encodings = self.tokenizer(batch_medical_record, padding=True, truncation=True, max_length=128,return_tensors="pt", return_offsets_mapping="True") # truncation=True
-    encodings = self.tokenizer(batch_medical_record, padding=True, truncation=True,max_length=2048,return_tensors="pt", return_offsets_mapping="True") # truncation=True
+    # >22G
+    #encodings = self.tokenizer(batch_medical_record, padding=True, truncation=True,max_length=2048,return_tensors="pt", return_offsets_mapping="True") # truncation=True
+
+    encodings = self.tokenizer(batch_medical_record, padding=True, truncation=True,max_length=1024,return_tensors="pt", return_offsets_mapping="True") # truncation=True
     # truncation=True 代表有斷詞
     # print("#####encodings  ={}".format(encodings['input_ids'][0]))
     # print("#####encodings  len={}".format(len(encodings['input_ids'][0])))
@@ -444,7 +447,7 @@ class testdataset_Privacy_protection_dataset(Dataset):
     batch_id_list = [sample[2] for sample in batch_items]
     # print("batch_labels = {} , batch_id_list={}".format(batch_labels, batch_id_list))
     # 文本丟入 encoding進行編碼 進行斷詞
-    encodings = self.tokenizer(batch_medical_record, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True") # truncation=True
+    encodings = self.tokenizer(batch_medical_record, padding=True, truncation=True,max_length=1024 , return_tensors="pt", return_offsets_mapping="True") # truncation=True
     # truncation=True 代表有斷詞
     # print("#####encodings ={}".format(encodings))
     # encode label

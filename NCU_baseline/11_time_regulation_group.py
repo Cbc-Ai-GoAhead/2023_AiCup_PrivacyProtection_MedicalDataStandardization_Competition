@@ -12,7 +12,7 @@ import csv
 # i_doc_path = "./submission/answer.txt"
 #i_doc_path = "./11_26_submission_9_12/submission_8_12/answer_8.txt"
 #i_doc_path = "./inference_testing/testingset_answer_dataset_3_12_0.54.txt"
-i_doc_path = "./inference_testing/testingset_answer_dataset_5_4_0.62_sliding.txt"
+i_doc_path = "./inference_testing/longformer.txt"
 # i_doc_path = "./inference_testing/answer.txt"
 # answer_df = pd.read_csv(i_doc_path, names =["file","class", "start","end","value"], dtype = str, sep="\t", quoting=csv.QUOTE_NONE)
 # answer_df = pd.read_csv(i_doc_path, names =["file","class", "start","end","value"], dtype = str, sep="\t", on_bad_lines=False)# <1.4.0
@@ -441,7 +441,7 @@ answer_df = answer_df.replace("nan",'')
 # print(answer_df[:50])
 from datetime import datetime
 timestr = datetime.now().strftime('%Y%m-%d%H-%M%S-%f')
-answer_df.to_csv("./inference_testing/answer_time_drop_{}_0101_sliding.txt".format(timestr), sep = '\t', header=False ,index = None)
+answer_df.to_csv("./inference_testing/longformer_time_drop_{}_0101_sliding.txt".format(timestr), sep = '\t', header=False ,index = None)
 # date_df = pd.DataFrame(columns = ['bert_date','regular_date'])
 # time_df = pd.DataFrame(columns = ['bert_time','regular_time'])
 # date_df['bert_date'] = ori_date_list
