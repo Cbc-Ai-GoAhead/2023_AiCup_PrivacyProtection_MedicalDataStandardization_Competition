@@ -68,8 +68,9 @@ class Longformer_Privacy_protection_dataset(Dataset):
     return batch_encodeing_labels
 
   def create_labels_tensor(self, batch_shape:list, batch_labels_position_encoded:list):
-    if batch_shape[-1]> 4096:
-      batch_shape[-1] = 4096
+    size = 12288
+    if batch_shape[-1]> size:
+      batch_shape[-1] = size
     labels_tensor = torch.zeros(batch_shape)
     # print("---in create_labels_tensor")
     # print("batch_shape = {}" .format(batch_shape))#(1, 512) # Bert只能有512個token
@@ -84,8 +85,8 @@ class Longformer_Privacy_protection_dataset(Dataset):
         # print("label_id = {}".format(label_id))
         start = label[1] # 取出Position encode編碼過後的位置
         end = label[2]
-        if start >= 4096: continue
-        elif end >= 4096: end = 4096
+        if start >= size: continue
+        elif end >= size: end = size
         labels_tensor[sample_id][start:end] = label_id#使用2D 儲存smapleid 0第0筆(MEDICALRECORD), 他起始位置與結束位置 ,與 label轉換成的id
         # print("sample_id = {}, start={}, end={}, labels_tensor={}" .format(sample_id, start, end, labels_tensor[sample_id][start:end]))
         """
@@ -401,8 +402,10 @@ class testdataset_Privacy_protection_dataset(Dataset):
     return batch_encodeing_labels
 
   def create_labels_tensor(self, batch_shape:list, batch_labels_position_encoded:list):
-    if batch_shape[-1]> 4096:
-      batch_shape[-1] = 4096
+    ##!!!! Longformer label need enlarge
+    size= 8192# bert=4096
+    if batch_shape[-1]> size:
+      batch_shape[-1] = size
     labels_tensor = torch.zeros(batch_shape)
     # print("---in create_labels_tensor")
     # print("batch_shape = {}" .format(batch_shape))#(1, 512) # Bert只能有512個token
@@ -417,8 +420,8 @@ class testdataset_Privacy_protection_dataset(Dataset):
         # print("label_id = {}, label[0]={}".format(label_id, label[0]))
         start = label[1] # 取出Position encode編碼過後的位置
         end = label[2]
-        if start >= 4096: continue
-        elif end >= 4096: end = 4096
+        if start >= size: continue
+        elif end >= size: end = size
         labels_tensor[sample_id][start:end] = label_id#使用2D 儲存smapleid 0第0筆(MEDICALRECORD), 他起始位置與結束位置 ,與 label轉換成的id
         # print("sample_id = {}, start={}, end={}, labels_tensor={}" .format(sample_id, start, end, labels_tensor[sample_id][start:end]))
         """

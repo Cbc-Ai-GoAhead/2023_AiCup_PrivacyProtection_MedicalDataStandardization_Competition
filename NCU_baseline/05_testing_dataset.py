@@ -118,7 +118,8 @@ if __name__ == '__main__':
     ####
     ## Data Set
     ####
-    TESTING_WINDOW_LENGTH = 1785
+    TESTING_WINDOW_LENGTH = 4096
+    print("TESTING_WINDOW_LENGTH = {}".format(TESTING_WINDOW_LENGTH))
     output_string = ""
     for i, sample in enumerate(test_dataset): # 取用dataset是使用 getitem
         test_x, test_y, file_id = sample
