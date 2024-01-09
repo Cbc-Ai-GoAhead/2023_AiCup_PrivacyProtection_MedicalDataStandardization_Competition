@@ -107,7 +107,7 @@ class Longformer_Privacy_protection_dataset(Dataset):
     # print("batch_items =")
     # print(batch_items)
     batch_medical_record = [sample[0] for sample in batch_items] #(id, label, start, end, query) or (id, label, start, end, query, time_org, timefix)
-    # print("#####batch_medical_record ={}".format(batch_medical_record))
+    # print("#####batch_medical_record len ={}".format(len(batch_medical_record[0])))
     # sample 0: 第id的文本, sample 1: label, sample 2: start_positioin, sample 3: End_position, sample 4: query
     # sample  0 取出文本 ('\nEpisode No:  62E239483S\n621239.MVH\n\n
     # sample  1 : [['IDNUM', 14, 24], ['MEDICALRECORD', 25, 35]
@@ -122,7 +122,8 @@ class Longformer_Privacy_protection_dataset(Dataset):
     # >22G
     #encodings = self.tokenizer(batch_medical_record, padding=True, truncation=True,max_length=2048,return_tensors="pt", return_offsets_mapping="True") # truncation=True
 
-    encodings = self.tokenizer(batch_medical_record, padding=True, truncation=True,max_length=1024,return_tensors="pt", return_offsets_mapping="True") # truncation=True
+    # encodings = self.tokenizer(batch_medical_record, padding=True, truncation=True,max_length=1024,return_tensors="pt", return_offsets_mapping="True") # truncation=True
+    encodings = self.tokenizer(batch_medical_record, padding=True, truncation=True,return_tensors="pt", return_offsets_mapping="True")
     # truncation=True 代表有斷詞
     # print("#####encodings  ={}".format(encodings['input_ids'][0]))
     # print("#####encodings  len={}".format(len(encodings['input_ids'][0])))

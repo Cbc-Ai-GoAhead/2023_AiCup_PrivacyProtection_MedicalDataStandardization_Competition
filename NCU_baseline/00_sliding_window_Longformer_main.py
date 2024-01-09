@@ -47,13 +47,14 @@ if __name__ == '__main__':
   print("#### load train data from path")
   train_medical_record_dict = {} #x
   train_medical_record_dict = read_text_from_file(train_path)
+  # train_medical_record_dict = read_text_from_file(train_path[:2])
 
   # print("train_medical_record_dict = {}".format(train_medical_record_dict))
   # #load validation data from path
   print("#### load validation data from path")
   val_medical_record_dict = {} #x
   val_medical_record_dict = read_text_from_file(val_path)
-
+  # val_medical_record_dict = read_text_from_file(val_path[:2])
 
   #####
   ##  Load Label
@@ -199,11 +200,13 @@ if __name__ == '__main__':
 
   print("Display Model------")
   from transformers import AutoTokenizer, AutoModelForTokenClassification
-  pretrained_weights = "bert-base-cased"
-  tokenizer = AutoTokenizer.from_pretrained(pretrained_weights)
+  print("Change Model!!!! Remeber Change Model")
+  # pretrained_weights = "bert-base-cased"
+  # token完長度是可變動的
+  tokenizer = AutoTokenizer.from_pretrained('allenai/longformer-base-4096', cache_dir="./checkpoint/")
   # config = AutoConfig.from_pretrained(pretrained_weights, num_labels = labels_num)
   # model = AutoModelForTokenClassification.from_pretrained(pretrained_weights, config)
-  model = AutoModelForTokenClassification.from_pretrained(pretrained_weights, num_labels = labels_num)
+  # model = AutoModelForTokenClassification.from_pretrained('allenai/longformer-base-4096', num_labels = labels_num)
   # 需要先有模型做斷詞
   train_dataset = Longformer_Privacy_protection_dataset(train_medical_record, train_labels, tokenizer, labels_type_table, "train")
   val_dataset = Longformer_Privacy_protection_dataset(val_medical_record, val_labels, tokenizer, labels_type_table, "validation")
@@ -317,12 +320,12 @@ if __name__ == '__main__':
   from bert_model import myLongModel
 
   model = myLongModel()
-  # print(model)
+  print(model)
 
-  BACH_SIZE = 4#1
+  BACH_SIZE = 1#1
   #TRAIN_RATIO = 0.9
   LEARNING_RATE = 1e-4
-  EPOCH = 12
+  EPOCH = 1
   device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
   model = model.to(device) # Put model on device
   optim = AdamW(model.parameters(), lr = LEARNING_RATE)
@@ -407,7 +410,7 @@ if __name__ == '__main__':
     for batch_x_name, batch_x, batch_y, batch_labels in val_dataloader:
       val_step += 1
       optim.zero_grad()
-      # print(batch_x["input_ids"])
+      # print("eval batch x len ={}".format(len(batch_x["input_ids"][0])))
       # print(batch_x["attention_mask"])
       # print(batch_y.long())
 
@@ -418,7 +421,7 @@ if __name__ == '__main__':
       model_predict_tables = torch.argmax(outputs, dim=-1, keepdim=True)
       model_predict_tables = model_predict_tables.squeeze(-1)
       P, R, F1 = calculate_batch_score(batch_labels, model_predict_tables, batch_x["offset_mapping"], labels_type_table)
-      if val_step%50==0:
+      if val_step%2==0:
         print("val_F1", F1)
       val_loss = loss_fct(outputs.transpose(-1, -2), batch_y)
       sum_val_F1 += float(F1)
@@ -429,7 +432,7 @@ if __name__ == '__main__':
     # model.save_pretrained(output_dir)
     # output_dir= output_dir+"_token"
     # tokenizer.save_pretrained(output_dir)
-    output_dir = "./longformer_model_slidingwindow_clip_4096_1024maxlen1024/" + "bert-base-cased"+"_"+str(epoch)+"_"+str(BACH_SIZE)+"_"+str(sum_val_F1/len(val_dataloader))
+    output_dir = "./longformer_model_slidingwindow_clip_4096_1024maxlen1024/" + "longformer_base-cased"+"_"+str(epoch)+"_"+str(BACH_SIZE)+"_"+str(sum_val_F1/len(val_dataloader))
     # torch.save(model.state_dict(), output_dir+"dict")
     # torch.save(model, output_dir)
     # model.save_model(output_dir)
@@ -437,7 +440,7 @@ if __name__ == '__main__':
     
     if sum_val_F1 > base_f1_score:
       base_f1_score = sum_val_F1
-      output_dir = "./longformer_model_slidingwindow_clip_4096_1024maxlen1024/" + "best_bert-base-cased"+"_"+str(epoch)+"_"+str(BACH_SIZE)+"_"+str(sum_val_F1/len(val_dataloader))
+      output_dir = "./experiments/longformer_model_slidingwindow_clip_4096_1024maxlen1024/" + "longformer_bert-base-cased"+"_"+str(epoch)+"_"+str(BACH_SIZE)+"_"+str(sum_val_F1/len(val_dataloader))
       # model.save_pretrained(output_dir)
       # output_dir= output_dir+"_token"
       # tokenizer.save_pretrained(output_dir)
@@ -462,6 +465,7 @@ if __name__ == '__main__':
     #print(i)
     #encodings = tokenizer(x, padding=True, truncation=True, return_tensors="pt", return_offsets_mapping="True")
     encodings["input_ids"] = encodings["input_ids"].to(device)
+    print("inference batch x len ={}".format(len(batch_x["input_ids"][0])))
     encodings["attention_mask"] = encodings["attention_mask"].to(device)
     outputs = model(encodings["input_ids"], encodings["attention_mask"])
     #output = softmax(outputs.logits)
@@ -500,8 +504,8 @@ if __name__ == '__main__':
           sample_result_str = (id +'\t'+ predict_label_name +'\t'+ str(start) +'\t'+ str(end) +'\t'+ predict_str + "\n")
           output_string += sample_result_str
       #print(y)
-  # print("output_string = {}".format(output_string))
-  exp_path = "./submission_slidingwindow_longformer"+"_"+str(epoch)+"_"+str(BACH_SIZE)
+  print("output_string = {}".format(output_string))
+  exp_path = "./experiments/submission_slidingwindow_longformer"+"_"+str(epoch)+"_"+str(BACH_SIZE)
   if not os.path.exists(exp_path):
       os.mkdir(exp_path)
   answer_path = exp_path+"/"+"answer.txt"

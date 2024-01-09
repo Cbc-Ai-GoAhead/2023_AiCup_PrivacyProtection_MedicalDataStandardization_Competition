@@ -205,7 +205,7 @@ def create_chunks(fileid, text,ori_label_list_group):
     final_conetext_start_position = len(text)-WINDOW_LENGTH
     final_conetext_end_position = len(text)
     # print("---fileid={}".format(fileid))
-    # print("text_len = {}, final_conetext_start={}, final_conetext_end_={}".format(len(text),final_conetext_start_position, final_conetext_end_position))
+    # print("text_len = {}, WINDOW_LENGTH={},final_conetext_start={}, final_conetext_end_={}".format(len(text),WINDOW_LENGTH, final_conetext_start_position, final_conetext_end_position))
     preserve_in_max_length_label_list_group = []
     final_in_context_length_label_list_group = []
     for id_list in label_list_group:# 去掉最後超出範圍的, 或是最後一個要由後往前取
@@ -253,7 +253,8 @@ def create_chunks(fileid, text,ori_label_list_group):
     
     
     # print("Handle final context")
-    # print("label_list_group = {}".format(label_list_group))
+    # print("processed label_list_group = {}".format(label_list_group))
+    # print("Final Label check")
     for id_list in ori_label_list_group:# 去掉最後超出範圍的, 或是最後一個要由後往前取
       start = id_list[1]
       end = id_list[2]
@@ -293,8 +294,8 @@ def create_chunks(fileid, text,ori_label_list_group):
   return processed_medical_record_dict,processed_label_dict
 #---Testing Dataset
 
-TESTING_WINDOW_LENGTH = 512#1785 #1428 會差 512 一點點還是多一點直接截斷
-TESTING_STRIDE_LENGTH = 512#1785 # 不能有重複的文本被預測 所以文本可以小一點 避免 後半部沒預測到？
+TESTING_WINDOW_LENGTH = WINDOW_LENGTH#512#1785 #1428 會差 512 一點點還是多一點直接截斷
+TESTING_STRIDE_LENGTH = STRIDE_LENGTH#512#1785 # 不能有重複的文本被預測 所以文本可以小一點 避免 後半部沒預測到？
 def reposition_testdataset(preserve_label_list_group, conetext_start_position):
   #file_id start end value
   # print("postion process list={}".format(preserve_label_list_group))

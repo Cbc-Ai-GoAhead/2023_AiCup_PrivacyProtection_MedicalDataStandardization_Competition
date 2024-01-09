@@ -1,0 +1,4 @@
+  File "/home/cbc/Nlp/2023_AiCup_PrivacyProtection_MedicalDataStandardization_Competition/NCU_baseline/00_sliding_window_Longformer_main.py", line 50
+    train_medical_record_dict = read_text_from_file([:1])
+                                                     ^
+SyntaxError: invalid syntax
